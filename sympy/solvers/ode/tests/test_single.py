@@ -4,7 +4,7 @@
 #
 
 from sympy.core import Function, Symbol
-from sympy.solvers.ode.single import (NthAlgebraic, ODEMatchError,
+from sympy.solvers.ode.single import (FirstLinear, ODEMatchError,
     SingleODEProblem, SingleODESolver)
 
 from sympy.testing.pytest import raises
@@ -28,12 +28,12 @@ def test_SingleODESolver():
     # it does not match and the asking for a general solution gives
     # ODEMatchError
 
-    problem = SingleODEProblem(f(x).diff(x) + f(x), f(x), x)
+    problem = SingleODEProblem(f(x).diff(x) + f(x)*f(x), f(x), x)
 
-    solver = NthAlgebraic(problem)
+    solver = FirstLinear(problem)
     raises(ODEMatchError, lambda: solver.get_general_solution())
 
-    solver = NthAlgebraic(problem)
+    solver = FirstLinear(problem)
     assert solver.matches() is False
 
     #These are just test for order of ODE
