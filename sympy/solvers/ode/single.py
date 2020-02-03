@@ -60,6 +60,7 @@ class SingleODEProblem:
     func = None  # type: AppliedUndef
     sym = None  # type: Symbol
     _order = None
+    exp_eq = None
 
     def __init__(self, eq, func, sym, eq_orig=None):
         self.eq = eq
@@ -72,6 +73,13 @@ class SingleODEProblem:
         if self._order is None:
             self._order = ode_order(self.eq, self.func)
         return self._order
+
+    @property
+    def expanded_eq(self):
+        if self.exp_eq is None:
+            self.exp_eq = expand(self.eq)
+        return self.exp_eq
+
     # TODO: Add methods that can be used by many ODE solvers:
     # order
     # is_linear()
@@ -336,10 +344,10 @@ class FirstLinear(SingleODESolver):
     has_integral = True
 
     def _matches(self):
-        eq = expand(self.ode_problem.eq)
+        eq = self.ode_problem.expanded_eq
         f = self.ode_problem.func.func
         x = self.ode_problem.sym
-        order = ode_order(eq, f(x))
+        order = self.ode_problem.order
         a = Wild('a', exclude=[f(x)])
         b = Wild('b', exclude=[f(x)])
         c = Wild('c', exclude=[f(x)])
@@ -459,10 +467,10 @@ class AlmostLinear(FirstLinear):
 
     def _matches(self):
         ## Almost-linear equation of the form f(x)*g(y)*y' + k(x)*l(y) + m(x) = 0
-        eq = expand(self.ode_problem.eq)
+        eq = self.ode_problem.expanded_eq
         f = self.ode_problem.func.func
         x = self.ode_problem.sym
-        order = ode_order(eq, f(x))
+        order = self.ode_problem.order
 
         if order != 1:
             return False
@@ -492,9 +500,6 @@ class AlmostLinear(FirstLinear):
                 return True
 
         return False
-
-    def _get_general_solution(self, *, simplify: bool = True):
-        return super()._get_general_solution()
 
 
 class Bernoulli(SingleODESolver):
@@ -577,10 +582,10 @@ class Bernoulli(SingleODESolver):
     has_integral = True
 
     def _matches(self):
-        eq = expand(self.ode_problem.eq)
+        eq = self.ode_problem.expanded_eq
         f = self.ode_problem.func.func
         x = self.ode_problem.sym
-        order = ode_order(eq, f(x))
+        order = self.ode_problem.order
         df = f(x).diff(x)
 
         if order != 1:

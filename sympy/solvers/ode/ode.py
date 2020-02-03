@@ -1075,10 +1075,10 @@ def classify_ode(eq, func=None, dict=False, ics=None, **kwargs):
     # d^3/dx^3(x y) = F(x)
     ode = SingleODEProblem(eq, func, x, eq_orig)
     solvers = {
-        NthAlgebraic: ('nth_algebraic','nth_algebraic_Integral'),
-        FirstLinear: ('1st_linear','1st_linear_Integral'),
-        AlmostLinear: ('almost_linear','almost_linear_Integral'),
-        Bernoulli: ('Bernoulli','Bernoulli_Integral')
+        NthAlgebraic: ('nth_algebraic',),
+        FirstLinear: ('1st_linear',),
+        AlmostLinear: ('almost_linear',),
+        Bernoulli: ('Bernoulli',)
     }
 
     for solvercls in solvers:
@@ -1086,6 +1086,8 @@ def classify_ode(eq, func=None, dict=False, ics=None, **kwargs):
         if solver.matches():
             for hints in solvers[solvercls]:
                 matching_hints[hints] = solver
+                if solvercls.has_integral:
+                    matching_hints[hints + "_Integral"] = solver
 
     eq = expand(eq)
     # Precondition to try remove f(x) from highest order derivative
