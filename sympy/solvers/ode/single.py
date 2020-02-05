@@ -17,7 +17,7 @@ from sympy.utilities import numbered_symbols
 from sympy.functions import exp
 
 from sympy.solvers.solvers import solve
-from sympy.solvers.deutils import ode_order
+from sympy.solvers.deutils import ode_order, _preprocess
 
 
 class ODEMatchError(NotImplementedError):
@@ -62,11 +62,24 @@ class SingleODEProblem:
     _order = None
     exp_eq = None
 
-    def __init__(self, eq, func, sym, eq_orig=None):
-        self.eq = eq
+    def __init__(self, eq, func, sym, prep=True):
+        self.eq_preprocessed = eq
         self.func = func
-        self.eq_orig = eq_orig
         self.sym = sym
+
+        if prep:
+            process_eq, process_func = _preprocess(eq, func)
+            self.eq = process_eq
+            if func is None:
+                self.func = process_func
+
+            if isinstance(self.eq, Equality):
+                if self.eq.rhs != 0:
+                    self.eq = self.eq.lhs - self.eq.rhs
+                self.eq = self.eq.lhs
+
+        else:
+            self.eq = eq
 
     @property
     def order(self):

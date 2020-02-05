@@ -1073,7 +1073,7 @@ def classify_ode(eq, func=None, dict=False, ics=None, **kwargs):
     # Any ODE that can be solved with a combination of algebra and
     # integrals e.g.:
     # d^3/dx^3(x y) = F(x)
-    ode = SingleODEProblem(eq, func, x, eq_orig)
+    ode = SingleODEProblem(eq_orig, func, x, prep=prep)
     solvers = {
         NthAlgebraic: ('nth_algebraic',),
         FirstLinear: ('1st_linear',),
