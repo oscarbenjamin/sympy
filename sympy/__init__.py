@@ -48,7 +48,9 @@ def __sympy_debug():
                            debug_str)
 SYMPY_DEBUG = __sympy_debug()  # type: bool
 
-x = 1
+def g():
+    x = 1
+    x = 2
 
 from .core import (sympify, SympifyError, cacheit, Basic, Atom,
         preorder_traversal, S, Expr, AtomicExpr, UnevaluatedExpr, Symbol,
