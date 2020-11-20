@@ -1,9 +1,10 @@
 name: run-tests
-on: [push]
+on: [push, pull_request]
 jobs:
-  check-bats-version:
+  basic-test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - run: pip install mpmath
+      - run: flake8 sympy
       - run: bin/test --force-colors
