@@ -82,3 +82,10 @@ jobs:
       - run: release/aptinstall.sh
       - run: pip install -r release/requirements.txt
       - run: bin/test_sphinx.sh
+      - name: Archive built docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: devdocs
+          path: |
+            doc/_build/html
+            doc/_build/latex/sympy-*.pdf
