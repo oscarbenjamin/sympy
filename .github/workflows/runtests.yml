@@ -189,7 +189,9 @@ jobs:
       - run: release/aptinstall.sh
       - run: pip install -r release/requirements.txt
       - run: bin/test_sphinx.sh
-
+      - uses: actions/upload-artifact@v2
+        with:
+          path: doc/_build/latex/sympy-*.pdf
 
   # -------------------- Check the error message under py2 --------- #
 
