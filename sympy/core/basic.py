@@ -113,6 +113,13 @@ class Basic(Printable, metaclass=ManagedProperties):
         obj._mhash = None  # will be set by __hash__ method.
 
         obj._args = args  # all items in args must be Basic objects
+        # Check that we were given only Basic:
+        assert all(isinstance(a, Basic) for a in args)
+        # if .args is overloaded then check that it still only returns Basic:
+        assert all(isinstance(a, Basic) for a in obj.args)
+        # We don't need to recurse if all args are Basic because they have
+        # already been checked. This should catch anything except a class that
+        # doesn't call Basic.__new__.
         return obj
 
     def copy(self):
