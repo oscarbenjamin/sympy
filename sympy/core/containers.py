@@ -232,7 +232,7 @@ class Dict(Basic):
         else:
             raise TypeError('Pass Dict args as Dict((k1, v1), ...) or Dict({k1: v1, ...})')
         elements = frozenset(items)
-        obj = Basic.__new__(cls, elements)
+        obj = Basic.__new__(cls, *elements)
         obj.elements = elements
         obj._dict = dict(items)  # In case Tuple decides it wants to sympify
         return obj
