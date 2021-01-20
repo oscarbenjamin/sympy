@@ -2844,16 +2844,20 @@ def linsolve(system, *symbols):
                     be given as a sequence, too.
                 '''))
             eqs = system
-            try:
-                eqs, ring = sympy_eqs_to_ring(eqs, symbols)
-            except PolynomialError as exc:
-                # e.g. cos(x) contains an element of the set of generators
-                raise NonlinearError(str(exc))
 
-            try:
-                sol = solve_lin_sys(eqs, ring, _raw=False)
-            except PolyNonlinearError as exc:
-                raise NonlinearError(str(exc))
+            from sympy.polys.solvers import _linsolve
+            sol = _linsolve(eqs, symbols)
+
+            #try:
+            #    eqs, ring = sympy_eqs_to_ring(eqs, symbols)
+            #except PolynomialError as exc:
+            #    # e.g. cos(x) contains an element of the set of generators
+            #    raise NonlinearError(str(exc))
+
+            #try:
+            #    sol = solve_lin_sys(eqs, ring, _raw=False)
+            #except PolyNonlinearError as exc:
+            #    raise NonlinearError(str(exc))
 
             if sol is None:
                 return S.EmptySet

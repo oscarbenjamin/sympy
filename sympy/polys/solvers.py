@@ -1,13 +1,19 @@
 """Low-level linear systems solver. """
 
+from collections import defaultdict
 
 from sympy.utilities.iterables import connected_components
 
+from sympy import S, Add, Mul
+
 from sympy.matrices import MutableDenseMatrix
+from sympy.polys.constructor import construct_domain
 from sympy.polys.domains import EX
 from sympy.polys.rings import sring
 from sympy.polys.polyerrors import NotInvertible
 from sympy.polys.domainmatrix import DomainMatrix
+
+from sympy.polys.matrices.sdm import SDM
 
 
 class PolyNonlinearError(Exception):
@@ -65,9 +71,20 @@ def eqs_to_matrix(eqs_coeffs, eqs_rhs, gens, domain):
 
     solve_lin_sys: Uses :func:`~eqs_to_matrix` internally
     """
-    sym2index = {x: n for n, x in enumerate(gens)}
     nrows = len(eqs_coeffs)
-    ncols = len(gens) + 1
+    nsyms = len(gens)
+    ncols = nsyms + 1
+
+    sym2index = {x: n for n, x in enumerate(gens)}
+
+    rows = []
+    for eq, rhs in zip(eqs_coeffs, eqs_rhs):
+        row = {sym2index[x]:c for x, c in eq.items()}
+        row[nsyms] = rhs
+        rows.append(row)
+    rep = SDM(enumerate(rows), (nrows, ncols), domain)
+    return DomainMatrix.from_rep(rep)
+
     rows = [[domain.zero] * ncols for _ in range(nrows)]
     for row, eq_coeff, eq_rhs in zip(rows, eqs_coeffs, eqs_rhs):
         for sym, coeff in eq_coeff.items():
@@ -130,6 +147,90 @@ def sympy_eqs_to_ring(eqs, symbols):
         # https://github.com/sympy/sympy/issues/18874
         K, eqs_K = sring(eqs, symbols, domain=EX)
     return eqs_K, K.to_domain()
+
+
+def _linsolve(eqs, syms):
+    eqsdict, rhs = _linear_eq_to_dict(eqs, syms)
+    eqs_coeffs, eqs_rhs, ring = sympy_dict_to_domain(eqsdict, rhs, syms)
+    result = _solve_lin_sys(eqs_coeffs, eqs_rhs, ring)
+
+    # XXX: This copied from solve_lin_sys below
+    if result is not None:
+
+        to_sympy = ring.domain.to_sympy
+        smap = dict(zip(ring.gens, ring.symbols))
+
+        tresult = {smap[sym]: to_sympy(val) for sym, val in result.items()}
+
+        # Remove 1.0x
+        result = {}
+        for k, v in tresult.items():
+            if k.is_Mul:
+                c, s = k.as_coeff_Mul()
+                result[s] = v/c
+            else:
+                result[k] = v
+
+    return result
+
+
+def sympy_dict_to_domain(eqs_coeffs, eqs_rhs, gens):
+    elems = set(eqs_rhs).union(*(e.values() for e in eqs_coeffs))
+    K, elems_K = construct_domain(elems, field=True, extension=True)
+    elem_map = dict(zip(elems, elems_K))
+    eqs_rhs_K = [elem_map[e] for e in eqs_rhs]
+    ring = K[gens].ring
+    smap = dict(zip(ring.symbols, ring.gens))
+    eqs_coeffs_K = [{smap[k]:elem_map[v] for k, v in ec.items()} for ec in eqs_coeffs]
+    return eqs_coeffs_K, eqs_rhs_K, ring
+
+
+def _linear_eq_to_dict(eqs, syms):
+    syms = set(syms)
+    eqsdict, eqs_rhs = [], []
+    for eq in eqs:
+        rhs, eqdict = _lin_eq2dict(eq, syms)
+        eqsdict.append(eqdict)
+        eqs_rhs.append(rhs)
+    return eqsdict, eqs_rhs
+
+
+def _lin_eq2dict(a, symset):
+    if a in symset:
+        return S.Zero, {a: S.One}
+    elif a.is_Add:
+        terms_list = defaultdict(list)
+        coeff_list = []
+        for ai in a.args:
+            ci, ti = _lin_eq2dict(ai, symset)
+            coeff_list.append(ci)
+            for mij, cij in ti.items():
+                terms_list[mij].append(cij)
+        coeff = Add(*coeff_list)
+        terms = {sym: Add(*coeffs) for sym, coeffs in terms_list.items()}
+        return coeff, terms
+    elif a.is_Mul:
+        terms = terms_coeff = None
+        coeff_list = []
+        for ai in a.args:
+            ci, ti = _lin_eq2dict(ai, symset)
+            if not ti:
+                coeff_list.append(ci)
+            elif terms is None:
+                terms = ti
+                terms_coeff = ci
+            else:
+                raise NonLinearError
+        coeff = Mul(*coeff_list)
+        if terms is None:
+            return coeff, {}
+        else:
+            terms = {sym: coeff * c for sym, c in terms.items()}
+            return  coeff * terms_coeff, terms
+    elif not a.free_symbols & symset:
+        return a, {}
+    else:
+        raise NonlinearError
 
 
 def solve_lin_sys(eqs, ring, _raw=True):
@@ -354,16 +455,19 @@ def _solve_lin_sys_component(eqs_coeffs, eqs_rhs, ring):
 
     # construct the returnable form of the solutions
     keys = ring.gens
+    zero = ring.domain.zero
+    ngens = ring.ngens
 
     if pivots and pivots[-1] == len(keys):
         return None
 
     if len(pivots) == len(keys):
-        sol = []
-        for s in [row[-1] for row in echelon.rep.to_ddm()]:
-            a = s
-            sol.append(a)
-        sols = dict(zip(keys, sol))
+        sols = {k: row.get(ngens, zero) for k, row in zip(keys, echelon.rep.values())}
+        #sol = []
+        #for s in [row[-1] for row in echelon.rep.to_ddm()]:
+        #    a = s
+        #    sol.append(a)
+        #sols = dict(zip(keys, sol))
     else:
         sols = {}
         g = ring.gens
