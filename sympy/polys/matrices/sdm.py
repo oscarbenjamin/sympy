@@ -60,7 +60,6 @@ class SDM(dict):
         return ddm
 
     def to_ddm(M):
-        import pdb; pdb.set_trace()
         return DDM(M.to_list(), M.shape, M.domain)
 
     @classmethod
