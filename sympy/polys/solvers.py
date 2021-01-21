@@ -14,6 +14,7 @@ from sympy.polys.polyerrors import NotInvertible
 from sympy.polys.domainmatrix import DomainMatrix
 
 from sympy.polys.matrices.sdm import SDM
+from sympy.core.function import expand_mul
 
 
 class PolyNonlinearError(Exception):
@@ -157,7 +158,13 @@ def _linsolve(eqs, syms):
     # XXX: This copied from solve_lin_sys below
     if result is not None:
 
-        to_sympy = ring.domain.to_sympy
+        def to_sympy(x):
+            as_expr = getattr(x, 'as_expr', None)
+            if as_expr:
+                return as_expr()
+            else:
+                return ring.domain.to_sympy(x)
+
         smap = dict(zip(ring.gens, ring.symbols))
 
         tresult = {smap[sym]: to_sympy(val) for sym, val in result.items()}
@@ -220,17 +227,19 @@ def _lin_eq2dict(a, symset):
                 terms = ti
                 terms_coeff = ci
             else:
-                raise NonLinearError
+                raise PolyNonLinearError
         coeff = Mul(*coeff_list)
         if terms is None:
             return coeff, {}
         else:
             terms = {sym: coeff * c for sym, c in terms.items()}
             return  coeff * terms_coeff, terms
+    elif a.is_Equality:
+        return _lin_eq2dict(expand_mul(a.lhs - a.rhs), symset)
     elif not a.free_symbols & symset:
         return a, {}
     else:
-        raise NonlinearError
+        raise PolyNonlinearError
 
 
 def solve_lin_sys(eqs, ring, _raw=True):

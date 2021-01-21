@@ -2846,7 +2846,11 @@ def linsolve(system, *symbols):
             eqs = system
 
             from sympy.polys.solvers import _linsolve
-            sol = _linsolve(eqs, symbols)
+            try:
+                sol = _linsolve(eqs, symbols)
+            except PolyNonlinearError as exc:
+                # e.g. cos(x) contains an element of the set of generators
+                raise NonlinearError(str(exc))
 
             #try:
             #    eqs, ring = sympy_eqs_to_ring(eqs, symbols)
