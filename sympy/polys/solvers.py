@@ -80,9 +80,11 @@ def eqs_to_matrix(eqs_coeffs, eqs_rhs, gens, domain):
 
     rows = []
     for eq, rhs in zip(eqs_coeffs, eqs_rhs):
-        row = {sym2index[x]:c for x, c in eq.items()}
-        row[nsyms] = -rhs
-        rows.append(row)
+        row = {sym2index[x]:c for x, c in eq.items() if c}
+        if rhs:
+            row[nsyms] = -rhs
+        if row:
+            rows.append(row)
     rep = SDM(enumerate(rows), (nrows, ncols), domain)
     return DomainMatrix.from_rep(rep)
 
