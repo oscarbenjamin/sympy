@@ -162,6 +162,13 @@ class SDM(dict):
         shape = (len(K), ncols)
         return A.new(K, shape, A.domain), nonpivots
 
+    def particular(A):
+        ncols = A.shape[1]
+        B, pivots, nzcols = sdm_irref(A)
+        P = sdm_particular_from_rref(B, ncols, pivots)
+        rep = {0:P} if P else {}
+        return A.new(rep, (1, A.shape[1]), A.domain)
+
     def charpoly(A):
         return A.to_ddm().charpoly()
 
@@ -391,3 +398,13 @@ def sdm_nullspace_from_rref(A, one, ncols, pivots, nonzero_cols):
         K.append(Kj)
 
     return K, nonpivots
+
+
+def sdm_particular_from_rref(A, ncols, pivots):
+    """Get a particular solution from A which is in RREF"""
+    P = {}
+    for i, j in enumerate(pivots):
+        Aij = A[i].get(ncols-1, None)
+        if Aij is not None:
+            P[i] = Aij / A[i][j]
+    return P
