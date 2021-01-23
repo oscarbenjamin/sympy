@@ -214,3 +214,16 @@ def test_SDM_rref():
              2:{0:QQ(7), 1:QQ(8), 2:QQ(9)} }, (3, 3), QQ)
     Arref = SDM({0:{0:QQ(1), 2:QQ(-1)}, 1:{1:QQ(1), 2:QQ(2)}}, (3, 3), QQ)
     assert A.rref() == (Arref, [0, 1])
+
+    A = SDM({0:{0:QQ(1), 1:QQ(2), 3:QQ(1)},
+             1:{0:QQ(1), 1:QQ(1), 2:QQ(9)}}, (2, 4), QQ)
+    Arref = SDM({0:{0:QQ(1), 2:QQ(18), 3:QQ(-1)},
+                 1:{1:QQ(1), 2:QQ(-9), 3:QQ(1)}}, (2, 4), QQ)
+    assert A.rref() == (Arref, [0, 1])
+
+    A = SDM({0:{0:QQ(1), 1:QQ(1), 2:QQ(1)},
+             1:{0:QQ(1), 1:QQ(2), 2:QQ(2)}}, (2, 3), QQ)
+    Arref = SDM(
+            {0: {0: QQ(1,1)}, 1: {1: QQ(1,1), 2: QQ(1,1)}},
+            (2, 3), QQ)
+    assert A.rref() == (Arref, [0, 1])
