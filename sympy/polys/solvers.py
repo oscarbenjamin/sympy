@@ -229,7 +229,7 @@ def _lin_eq2dict(a, symset):
                 terms = ti
                 terms_coeff = ci
             else:
-                raise PolyNonLinearError
+                raise PolyNonlinearError
         coeff = Mul(*coeff_list)
         if terms is None:
             return coeff, {}
