@@ -194,3 +194,23 @@ def test_SDM_charpoly():
 def test_SDM_nullspace():
     A = SDM({0:{0:QQ(1), 1:QQ(1)}}, (2, 2), QQ)
     assert A.nullspace() == DDM([[QQ(-1), QQ(1)]], (1, 2), QQ)
+
+
+def test_SDM_rref():
+    eye2 = SDM({0:{0:QQ(1)}, 1:{1:QQ(1)}}, (2, 2), QQ)
+    eye3 = SDM({0:{0:QQ(1)}, 1:{1:QQ(1)}, 2:{2:QQ(1)}}, (3, 3), QQ)
+
+    A = SDM({0:{0:QQ(1), 1:QQ(2)}, 1:{0:QQ(3), 1:QQ(4)}}, (2, 2), QQ)
+    assert A.rref() == (eye2, [0, 1])
+
+    A = SDM({0:{0:QQ(1)}, 1:{0:QQ(3), 1:QQ(4)}}, (2, 2), QQ)
+    assert A.rref() == (eye2, [0, 1])
+
+    A = SDM({0:{1:QQ(2)}, 1:{0:QQ(3), 1:QQ(4)}}, (2, 2), QQ)
+    assert A.rref() == (eye2, [0, 1])
+
+    A = SDM({0:{0:QQ(1), 1:QQ(2), 2:QQ(3)},
+             1:{0:QQ(4), 1:QQ(5), 2:QQ(6)},
+             2:{0:QQ(7), 1:QQ(8), 2:QQ(9)} }, (3, 3), QQ)
+    Arref = SDM({0:{0:QQ(1), 2:QQ(-1)}, 1:{1:QQ(1), 2:QQ(2)}}, (3, 3), QQ)
+    assert A.rref() == (Arref, [0, 1])
