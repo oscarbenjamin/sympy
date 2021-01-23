@@ -80,9 +80,15 @@ class SDM(dict):
                     MT[j][i] = Mij
                 except KeyError:
                     MT[j] = {i: Mij}
-        return M.new(MT, M.shape, M.domain)
+        return M.new(MT, M.shape[::-1], M.domain)
 
     def __mul__(a, b):
+        if b in a.domain:
+            return a.mul(b)
+        else:
+            return NotImplemented
+
+    def __rmul__(a, b):
         if b in a.domain:
             return a.mul(b)
         else:
