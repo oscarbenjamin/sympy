@@ -168,7 +168,7 @@ class DomainMatrix:
         return self.from_rep(rref_ddm), tuple(pivots)
 
     def nullspace(self):
-        return self.from_rep(self.rep.nullspace())
+        return self.from_rep(self.rep.nullspace()[0])
 
     def inv(self):
         if not self.domain.is_Field:

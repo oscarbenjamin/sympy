@@ -193,7 +193,7 @@ def test_SDM_charpoly():
 
 def test_SDM_nullspace():
     A = SDM({0:{0:QQ(1), 1:QQ(1)}}, (2, 2), QQ)
-    assert A.nullspace() == DDM([[QQ(-1), QQ(1)]], (1, 2), QQ)
+    assert A.nullspace()[0] == SDM({0:{0:QQ(-1), 1:QQ(1)}}, (1, 2), QQ)
 
 
 def test_SDM_rref():
