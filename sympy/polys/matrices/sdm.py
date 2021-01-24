@@ -169,6 +169,26 @@ class SDM(dict):
         rep = {0:P} if P else {}
         return A.new(rep, (1, A.shape[1]), A.domain)
 
+    def hstack(A, *B):
+        Anew = dict(A.copy())
+        rows, cols = A.shape
+        domain = A.domain
+
+        for Bk in B:
+            Bkrows, Bkcols = Bk.shape
+            assert Bkrows == rows
+            assert Bk.domain == domain
+
+            for i, Bki in Bk.items():
+                Ai = Anew.get(i, None)
+                if Ai is None:
+                    Anew[i] = Ai = {}
+                for j, Bkij in Bki.items():
+                    Ai[j + cols] = Bkij
+            cols += Bkcols
+
+        return A.new(Anew, (rows, cols), A.domain)
+
     def charpoly(A):
         return A.to_ddm().charpoly()
 

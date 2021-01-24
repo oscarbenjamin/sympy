@@ -153,45 +153,47 @@ def sympy_eqs_to_ring(eqs, symbols):
 
 
 def _linsolve(eqs, syms):
+    from sympy.polys.matrices.sdm import (sdm_irref, sdm_nullspace_from_rref,
+            sdm_particular_from_rref)
+
     eqsdict, rhs = _linear_eq_to_dict(eqs, syms)
-    eqs_coeffs, eqs_rhs, ring = sympy_dict_to_domain(eqsdict, rhs, syms)
-    result = _solve_lin_sys(eqs_coeffs, eqs_rhs, ring)
+    Aaug = sympy_dict_to_dm(eqsdict, rhs, syms)
+    K = Aaug.domain
+    ncols = Aaug.shape[1]
 
-    # XXX: This copied from solve_lin_sys below
-    if result is not None:
+    Arref, pivots, nzcols = sdm_irref(Aaug)
+    if pivots[-1] == ncols-1:
+        return None
 
-        def to_sympy(x):
-            as_expr = getattr(x, 'as_expr', None)
-            if as_expr:
-                return as_expr()
-            else:
-                return ring.domain.to_sympy(x)
+    P = sdm_particular_from_rref(Arref, ncols, pivots)
+    V, nonpivots = sdm_nullspace_from_rref(Arref, K.one, ncols, pivots, nzcols)
 
-        smap = dict(zip(ring.gens, ring.symbols))
+    sol = defaultdict(list)
+    for i, v in P.items():
+        sol[syms[i]].append(K.to_sympy(v))
+    for npi, Vi in zip(nonpivots[:-1], V):
+        sym = syms[npi]
+        for i, v in Vi.items():
+            sol[syms[i]].append(sym * K.to_sympy(v))
 
-        tresult = {smap[sym]: to_sympy(val) for sym, val in result.items()}
-
-        # Remove 1.0x
-        result = {}
-        for k, v in tresult.items():
-            if k.is_Mul:
-                c, s = k.as_coeff_Mul()
-                result[s] = v/c
-            else:
-                result[k] = v
-
-    return result
+    return {s: Add(*terms) for s, terms in sol.items()}
 
 
-def sympy_dict_to_domain(eqs_coeffs, eqs_rhs, gens):
+def sympy_dict_to_dm(eqs_coeffs, eqs_rhs, syms):
     elems = set(eqs_rhs).union(*(e.values() for e in eqs_coeffs))
     K, elems_K = construct_domain(elems, field=True, extension=True)
     elem_map = dict(zip(elems, elems_K))
-    eqs_rhs_K = [elem_map[e] for e in eqs_rhs]
-    ring = K[gens].ring
-    smap = dict(zip(ring.symbols, ring.gens))
-    eqs_coeffs_K = [{smap[k]:elem_map[v] for k, v in ec.items()} for ec in eqs_coeffs]
-    return eqs_coeffs_K, eqs_rhs_K, ring
+    neqs = len(eqs_coeffs)
+    nsyms = len(syms)
+    sym2index = dict(zip(syms, range(nsyms)))
+    eqsdict = []
+    for eq, rhs in zip(eqs_coeffs, eqs_rhs):
+        eqdict = {sym2index[s]: elem_map[c] for s, c in eq.items()}
+        if rhs:
+            eqdict[nsyms] = - elem_map[rhs]
+        eqsdict.append(eqdict)
+    sdm_aug = SDM(enumerate(eqsdict), (neqs, nsyms+1), K)
+    return sdm_aug
 
 
 def _linear_eq_to_dict(eqs, syms):

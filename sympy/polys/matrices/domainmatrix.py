@@ -87,6 +87,10 @@ class DomainMatrix:
         rowstr = '[%s]' % ', '.join(rows_str)
         return 'DomainMatrix(%s, %r, %r)' % (rowstr, self.shape, self.domain)
 
+    def hstack(A, B):
+        A, B = A.unify(B)
+        return A.from_rep(A.rep.hstack(B.rep))
+
     def __add__(A, B):
         if not isinstance(B, DomainMatrix):
             return NotImplemented
