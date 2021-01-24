@@ -13,7 +13,9 @@ from sympy.polys.rings import sring
 from sympy.polys.polyerrors import NotInvertible
 from sympy.polys.domainmatrix import DomainMatrix
 
-from sympy.polys.matrices.sdm import SDM
+from sympy.polys.matrices.sdm import (SDM, sdm_irref, sdm_nullspace_from_rref,
+        sdm_particular_from_rref)
+
 from sympy.core.function import expand_mul
 
 
@@ -72,22 +74,9 @@ def eqs_to_matrix(eqs_coeffs, eqs_rhs, gens, domain):
 
     solve_lin_sys: Uses :func:`~eqs_to_matrix` internally
     """
-    nrows = len(eqs_coeffs)
-    nsyms = len(gens)
-    ncols = nsyms + 1
-
     sym2index = {x: n for n, x in enumerate(gens)}
-
-    rows = []
-    for eq, rhs in zip(eqs_coeffs, eqs_rhs):
-        row = {sym2index[x]:c for x, c in eq.items() if c}
-        if rhs:
-            row[nsyms] = -rhs
-        if row:
-            rows.append(row)
-    rep = SDM(enumerate(rows), (nrows, ncols), domain)
-    return DomainMatrix.from_rep(rep)
-
+    nrows = len(eqs_coeffs)
+    ncols = len(gens) + 1
     rows = [[domain.zero] * ncols for _ in range(nrows)]
     for row, eq_coeff, eq_rhs in zip(rows, eqs_coeffs, eqs_rhs):
         for sym, coeff in eq_coeff.items():
@@ -153,20 +142,32 @@ def sympy_eqs_to_ring(eqs, symbols):
 
 
 def _linsolve(eqs, syms):
-    from sympy.polys.matrices.sdm import (sdm_irref, sdm_nullspace_from_rref,
-            sdm_particular_from_rref)
-
     eqsdict, rhs = _linear_eq_to_dict(eqs, syms)
     Aaug = sympy_dict_to_dm(eqsdict, rhs, syms)
     K = Aaug.domain
     ncols = Aaug.shape[1]
 
     Arref, pivots, nzcols = sdm_irref(Aaug)
+
+    # No solution:
     if pivots[-1] == ncols-1:
         return None
 
+    # Particular solution for non-homogeneous system:
     P = sdm_particular_from_rref(Arref, ncols, pivots)
-    V, nonpivots = sdm_nullspace_from_rref(Arref, K.one, ncols, pivots, nzcols)
+
+    # Arref2 = Arref[:,:-1]
+    Arref2 = {}
+    for n, row in Arref.items():
+        row2 = row.copy()
+        if ncols - 1 in row2:
+            row2.pop(ncols - 1)
+        Arref2[n] = row2
+    if ncols - 1 in nzcols:
+        nzcols.pop(ncols - 1)
+
+    # Nullspace - general solution to homogeneous system
+    V, nonpivots = sdm_nullspace_from_rref(Arref2, K.one, ncols, pivots, nzcols)
 
     sol = defaultdict(list)
     for i, v in P.items():
@@ -176,7 +177,9 @@ def _linsolve(eqs, syms):
         for i, v in Vi.items():
             sol[syms[i]].append(sym * K.to_sympy(v))
 
-    return {s: Add(*terms) for s, terms in sol.items()}
+    res = {s: Add(*terms) for s, terms in sol.items()}
+    print(res)
+    return res
 
 
 def sympy_dict_to_dm(eqs_coeffs, eqs_rhs, syms):
@@ -468,19 +471,16 @@ def _solve_lin_sys_component(eqs_coeffs, eqs_rhs, ring):
 
     # construct the returnable form of the solutions
     keys = ring.gens
-    zero = ring.domain.zero
-    ngens = ring.ngens
 
     if pivots and pivots[-1] == len(keys):
         return None
 
     if len(pivots) == len(keys):
-        sols = {k: row.get(ngens, zero) for k, row in zip(keys, echelon.rep.values())}
-        #sol = []
-        #for s in [row[-1] for row in echelon.rep.to_ddm()]:
-        #    a = s
-        #    sol.append(a)
-        #sols = dict(zip(keys, sol))
+        sol = []
+        for s in [row[-1] for row in echelon.rep.to_ddm()]:
+            a = s
+            sol.append(a)
+        sols = dict(zip(keys, sol))
     else:
         sols = {}
         g = ring.gens

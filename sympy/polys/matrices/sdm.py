@@ -401,6 +401,8 @@ def sdm_irref(A):
 
     # All done!
     pivots = sorted(reduced_pivots | nonreduced_pivots)
+    pivot2row = {p: n for n, p in enumerate(pivots)}
+    nonzero_columns = {c: set(pivot2row[p] for p in s) for c, s in nonzero_columns.items()}
     rows = [pivot_row_map[i] for i in pivots]
     rref = dict(enumerate(rows))
     return rref, pivots, nonzero_columns
@@ -424,7 +426,7 @@ def sdm_particular_from_rref(A, ncols, pivots):
     """Get a particular solution from A which is in RREF"""
     P = {}
     for i, j in enumerate(pivots):
-        Aij = A[i].get(ncols-1, None)
-        if Aij is not None:
-            P[i] = Aij / A[i][j]
+        Ain = A[i].get(ncols-1, None)
+        if Ain is not None:
+            P[j] = Ain / A[i][j]
     return P
