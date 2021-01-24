@@ -416,7 +416,7 @@ def sdm_nullspace_from_rref(A, one, ncols, pivots, nonzero_cols):
     for j in nonpivots:
         Kj = {j:one}
         for i in nonzero_cols.get(j, ()):
-            Kj[i] = -A[i][j]
+            Kj[pivots[i]] = -A[i][j]
         K.append(Kj)
 
     return K, nonpivots

@@ -142,44 +142,47 @@ def sympy_eqs_to_ring(eqs, symbols):
 
 
 def _linsolve(eqs, syms):
+    # Number of unknowns (columns in the non-augmented matrix)
+    nsyms = len(syms)
+
+    # Convert to sparse augmented matrix (len(eqs) x (nsyms+1))
     eqsdict, rhs = _linear_eq_to_dict(eqs, syms)
     Aaug = sympy_dict_to_dm(eqsdict, rhs, syms)
     K = Aaug.domain
-    ncols = Aaug.shape[1]
 
+    # Compute reduced-row echelon form (RREF)
     Arref, pivots, nzcols = sdm_irref(Aaug)
 
     # No solution:
-    if pivots[-1] == ncols-1:
+    if pivots[-1] == nsyms:
         return None
 
     # Particular solution for non-homogeneous system:
-    P = sdm_particular_from_rref(Arref, ncols, pivots)
-
-    # Arref2 = Arref[:,:-1]
-    Arref2 = {}
-    for n, row in Arref.items():
-        row2 = row.copy()
-        if ncols - 1 in row2:
-            row2.pop(ncols - 1)
-        Arref2[n] = row2
-    if ncols - 1 in nzcols:
-        nzcols.pop(ncols - 1)
+    P = sdm_particular_from_rref(Arref, nsyms+1, pivots)
 
     # Nullspace - general solution to homogeneous system
-    V, nonpivots = sdm_nullspace_from_rref(Arref2, K.one, ncols, pivots, nzcols)
+    # Note: using nsyms not nsyms+1 to ignore last column
+    V, nonpivots = sdm_nullspace_from_rref(Arref, K.one, nsyms, pivots, nzcols)
 
+    # Collect together terms from particular and nullspace:
     sol = defaultdict(list)
     for i, v in P.items():
         sol[syms[i]].append(K.to_sympy(v))
-    for npi, Vi in zip(nonpivots[:-1], V):
+    for npi, Vi in zip(nonpivots, V):
         sym = syms[npi]
         for i, v in Vi.items():
             sol[syms[i]].append(sym * K.to_sympy(v))
 
-    res = {s: Add(*terms) for s, terms in sol.items()}
-    print(res)
-    return res
+    # Use a single call to Add for each term:
+    sol = {s: Add(*terms) for s, terms in sol.items()}
+
+    # Fill in the zeros:
+    zero = S.Zero
+    for s in set(syms) - set(sol):
+        sol[s] = zero
+
+    # All done!
+    return sol
 
 
 def sympy_dict_to_dm(eqs_coeffs, eqs_rhs, syms):
