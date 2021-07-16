@@ -18,6 +18,37 @@ jobs:
           name: benchmarks
       - run: cat pr_vs_master.txt
       - run: cat pr_num.txt
+
+      - name: Read the pr_num file
+        id: pr_num_reader
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: pr_num.txt
+
+      - name: Read the benchmark output
+        id: pr_vs_master
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: pr_vs_master.txt
+
+      - name: Find Comment
+        uses: peter-evans/find-comment@v1
+        id: fc
+        with:
+          issue-number: ${{ steps.pr_num_reader.outputs.content }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Build output
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ steps.pr_num_reader.outputs.content }}
+          body: |
+            Benchmarks
+            ${{ steps.pr_vs_master.outputs.content }}
+          edit-mode: replace
+
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
