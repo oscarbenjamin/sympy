@@ -22,12 +22,13 @@ jobs:
           python-version: 3.9
       - run: python -m pip install --upgrade pip
       - run: pip install mpmath flake8
+      - run: bin
       - run: bin/test quality
       - run: flake8 sympy
         # compileall is used to detect invalid escapes like '\e'
       - run: python -We:invalid -We::SyntaxWarning -m compileall -f -q sympy/
         # test all modules are listed in setup.py
-      - run: bin/test_setup.py
+      - run: bin
 
   # -------------------- Doctests latest Python -------------------- #
 
@@ -211,3 +212,42 @@ jobs:
         with:
           python-version: 2.7
       - run: bin/test_py2_import.py
+
+
+  benchmarks2:
+    runs-on: ubuntu-20.04
+    steps:
+      - run: echo hello > notes.txt
+      - uses: actions/upload-artifact@v2
+        with:
+          name: benchmarks2
+          path: notes.txt
+
+
+  # -------------------- Run benchmarks against master ------------- #
+
+  benchmarks:
+    runs-on: ubuntu-20.04
+    steps:
+      - run: bin
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - run: pip install asv virtualenv
+      - run: git submodule add https://github.com/sympy/sympy_benchmarks.git
+
+        # Need to make sure we can access the original master branch
+      - run: git remote add upstream https://github.com/sympy/sympy.git
+      - run: git fetch upstream master
+
+      - run: asv machine --yes --config asv.conf.actions.json
+      - run: asv run --config asv.conf.actions.json
+      - run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: benchmarks
+          path: pr_vs_master.txt
