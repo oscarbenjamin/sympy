@@ -44,5 +44,5 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-        name: benchmarks
-        path: pr_vs_master.txt
+          name: benchmarks
+          path: pr_vs_master.txt
