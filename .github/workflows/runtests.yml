@@ -33,7 +33,7 @@ jobs:
         #- run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
 
       - name: Save the PR number in an artifact
-        run: printf ${{ github.event.number }} > pr_num.txt
+        run: echo -n ${{ github.event.number }} > pr_num.txt
 
       - uses: actions/upload-artifact@v2
         with:
