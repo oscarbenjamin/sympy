@@ -40,7 +40,7 @@ jobs:
         with:
           issue-number: ${{ steps.pr_num_reader.outputs.content }}
           comment-author: 'github-actions[bot]'
-          body-includes: Build output
+          body-includes: Benchmarks
 
       - name: Create or update comment
         if: ${{ steps.pr_num_reader.outputs.content != '' }}
