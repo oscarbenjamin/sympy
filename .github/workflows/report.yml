@@ -17,6 +17,7 @@ jobs:
           workflow_conclusion: success
           name: benchmarks
       - run: cat pr_vs_master.txt
+      - run: cat pr_num.txt
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}

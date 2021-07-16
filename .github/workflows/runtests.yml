@@ -10,16 +10,6 @@ name: test
 on: [push, pull_request]
 jobs:
 
-  benchmarks2:
-    runs-on: ubuntu-20.04
-    steps:
-      - run: echo hello > notes.txt
-      - uses: actions/upload-artifact@v2
-        with:
-          name: benchmarks2
-          path: notes.txt
-
-
   # -------------------- Run benchmarks against master ------------- #
 
   benchmarks:
@@ -38,11 +28,16 @@ jobs:
       - run: git remote add upstream https://github.com/sympy/sympy.git
       - run: git fetch upstream master
 
-      - run: asv machine --yes --config asv.conf.actions.json
-      - run: asv run --config asv.conf.actions.json
-      - run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
+      - run: asv machine --yes --config asv.conf.actions.json | tee pr_vs_master.txt
+        #- run: asv run --config asv.conf.actions.json
+        #- run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
+
+      - name: Save the PR number in an artifact
+        run: echo ${{ github.event.number }} > pr_num.txt
 
       - uses: actions/upload-artifact@v2
         with:
           name: benchmarks
-          path: pr_vs_master.txt
+          path: |
+            pr_vs_master.txt
+            pr_num.txt
