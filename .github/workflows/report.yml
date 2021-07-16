@@ -9,8 +9,11 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - run: echo success............
-      - uses: actions/download-artifact@v2
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
         with:
+          workflow: test
+          workflow_conclusion: success
           name: benchmarks2
           path: notes.txt
       - run: cat notes.txt
