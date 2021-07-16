@@ -25,6 +25,7 @@ jobs:
         with:
           path: pr_num.txt
 
+      - run: python -c 'print(repr(open("pr_num.txt").read()))'
       - run: echo ${{ steps.pr_num_reader.outputs.content }} | python -c 'import sys; print(repr(sys.stdin.read()))'
 
       - name: Read the benchmark output
