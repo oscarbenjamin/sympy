@@ -15,7 +15,6 @@ jobs:
           workflow: test
           workflow_conclusion: success
           name: benchmarks2
-          path: notes.txt
       - run: cat notes.txt
   on-failure:
     runs-on: ubuntu-latest
