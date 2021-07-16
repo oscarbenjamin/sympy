@@ -39,10 +39,10 @@ jobs:
       - run: git fetch upstream master
 
       - run: asv machine --yes --config asv.conf.actions.json
-        #- run: asv run --config asv.conf.actions.json
-        #- run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
+      - run: asv run --config asv.conf.actions.json
+      - run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
 
-        #- uses: actions/upload-artifact@v2
-        #with:
-        #name: benchmarks
-        #path: pr_vs_master.txt
+      - uses: actions/upload-artifact@v2
+        with:
+        name: benchmarks
+        path: pr_vs_master.txt
