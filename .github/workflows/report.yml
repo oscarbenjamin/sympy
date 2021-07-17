@@ -33,6 +33,12 @@ jobs:
         with:
           path: pr_vs_master_changed.txt
 
+      - name: Read the benchmark output
+        id: master_vs_release_changed
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: master_vs_released_changed.txt
+
       - name: Find Comment
         if: ${{ steps.pr_num_reader.outputs.content != '' }}
         uses: peter-evans/find-comment@v1
@@ -49,8 +55,10 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ steps.pr_num_reader.outputs.content }}
           body: |
-            Benchmarks
+            Changed benchmark results (PR vs master)
             ${{ steps.pr_vs_master_changed.outputs.content }}
+            Changed benchmark results (master vs previous release)
+            ${{ steps.master_vs_release_changed.outputs.content }}
           edit-mode: replace
 
   on-failure:
