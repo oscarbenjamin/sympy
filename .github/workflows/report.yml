@@ -37,7 +37,7 @@ jobs:
         id: master_vs_release_changed
         uses: juliangruber/read-file-action@v1.0.0
         with:
-          path: master_vs_released_changed.txt
+          path: master_vs_release_changed.txt
 
       - name: Find Comment
         if: ${{ steps.pr_num_reader.outputs.content != '' }}
