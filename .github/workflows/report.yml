@@ -28,10 +28,10 @@ jobs:
       - run: python -c 'print(repr(open("pr_num.txt").read()))'
 
       - name: Read the benchmark output
-        id: pr_vs_master
+        id: pr_vs_master_changed
         uses: juliangruber/read-file-action@v1.0.0
         with:
-          path: pr_vs_master.txt
+          path: pr_vs_master_changed.txt
 
       - name: Find Comment
         if: ${{ steps.pr_num_reader.outputs.content != '' }}
@@ -50,7 +50,7 @@ jobs:
           issue-number: ${{ steps.pr_num_reader.outputs.content }}
           body: |
             Benchmarks
-            ${{ steps.pr_vs_master.outputs.content }}
+            ${{ steps.pr_vs_master_changed.outputs.content }}
           edit-mode: replace
 
   on-failure:

@@ -31,6 +31,7 @@ jobs:
       - run: asv machine --yes --config asv.conf.actions.json
       - run: asv run --config asv.conf.actions.json
       - run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
+      - run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 --only-changed | tee pr_vs_master_changed.txt
 
       - name: Save the PR number in an artifact
         run: echo -n ${{ github.event.number }} > pr_num.txt
@@ -40,4 +41,5 @@ jobs:
           name: benchmarks
           path: |
             pr_vs_master.txt
+            pr_vs_master_changed.txt
             pr_num.txt
