@@ -30,7 +30,7 @@ jobs:
       - run: git fetch upstream sympy-1.8
 
       - run: asv machine --yes --config asv.conf.actions.json
-      - run: asv run --config asv.conf.actions.json
+        #- run: asv run --config asv.conf.actions.json
         #- run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 | tee pr_vs_master.txt
         #- run: asv compare upstream/master HEAD --config asv.conf.actions.json --factor 1.5 --only-changed | tee pr_vs_master_changed.txt
         #- run: asv compare upstream/sympy-1.8 upstream/master --config asv.conf.actions.json --factor 1.5 | tee master_vs_release.txt
