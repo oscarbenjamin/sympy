@@ -1,0 +1,82 @@
+# ------------------------------------------------------------------ #
+#                                                                    #
+#           SymPy CI script to comment on a PR                       #
+#                                                                    #
+#   Runs after the main tests are complete and reports results.      #
+#                                                                    #
+# ------------------------------------------------------------------ #
+
+on:
+  workflow_run:
+    # test is the name given for the workflow in runtests.yml
+    workflows: ["test"]
+    types: [completed]
+
+jobs:
+
+  comment-on-pr:
+    runs-on: ubuntu-latest
+    # Only run if the tests passed:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+        # Need a special plugin to retrieve an artifact from another workflow.
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: runtests.yml
+          workflow_conclusion: success
+          name: benchmarks
+
+        # The previous workflow stored the issue number for the PR. We need it
+        # here to be able to comment on the PR
+
+      - name: Read the pr_num file
+        id: pr_num_reader
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: pr_num.txt
+
+      - name: Read the benchmark output
+        id: pr_vs_master_changed
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: pr_vs_master_changed.txt
+
+      - name: Read the benchmark output
+        id: master_vs_release_changed
+        uses: juliangruber/read-file-action@v1.0.0
+        with:
+          path: master_vs_release_changed.txt
+
+        # The two steps below should create a new comment or update the
+        # existing comment (edit-mode: replace). Note that the opening line of
+        # the comment body is matched by body-includes so if that does not
+        # match then a new comment will always be created.
+
+      - name: Find Comment
+        # This may be running after a push with no associated PR in which case
+        # the PR number variable is empty. Skip commenting in that case.
+        if: ${{ steps.pr_num_reader.outputs.content != '' }}
+        uses: peter-evans/find-comment@v1
+        id: fc
+        with:
+          issue-number: ${{ steps.pr_num_reader.outputs.content }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Benchmark results from GitHub Actions
+
+      - name: Create or update comment
+        if: ${{ steps.pr_num_reader.outputs.content != '' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ steps.pr_num_reader.outputs.content }}
+          body: |
+            Benchmark results from GitHub Actions
+            Ratio less than 1 means a speed up, greater than 1 is a slowdown.
+            Changed benchmark results (PR vs master)
+            ${{ steps.pr_vs_master_changed.outputs.content }}
+            Changed benchmark results (master vs previous release)
+            ${{ steps.master_vs_release_changed.outputs.content }}
+            Full benchmark results can be found as artifacts in GitHub Actions.
+          edit-mode: replace
