@@ -178,10 +178,10 @@ class Expr(Basic, EvalfMixin):
     def _mul_handler(self):
         return Mul
 
-    def __pos__(self):
+    def __pos__(self) -> Expr:
         return self
 
-    def __neg__(self):
+    def __neg__(self) -> Expr:
         # Mul has its own __neg__ routine, so we just
         # create a 2-args Mul with the -1 in the canonical
         # slot 0.
@@ -194,32 +194,32 @@ class Expr(Basic, EvalfMixin):
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__radd__')
-    def __add__(self, other):
+    def __add__(self, other) -> Expr:
         return Add(self, other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__add__')
-    def __radd__(self, other):
+    def __radd__(self, other) -> Expr:
         return Add(other, self)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rsub__')
-    def __sub__(self, other):
+    def __sub__(self, other) -> Expr:
         return Add(self, -other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__sub__')
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> Expr:
         return Add(other, -self)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rmul__')
-    def __mul__(self, other):
+    def __mul__(self, other) -> Expr:
         return Mul(self, other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__mul__')
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> Expr:
         return Mul(other, self)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
@@ -246,12 +246,12 @@ class Expr(Basic, EvalfMixin):
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__pow__')
-    def __rpow__(self, other):
+    def __rpow__(self, other) -> Expr:
         return Pow(other, self)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rtruediv__')
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> Expr:
         denom = Pow(other, S.NegativeOne)
         if self is S.One:
             return denom
@@ -260,7 +260,7 @@ class Expr(Basic, EvalfMixin):
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__truediv__')
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> Expr:
         denom = Pow(self, S.NegativeOne)
         if other is S.One:
             return denom
@@ -269,40 +269,40 @@ class Expr(Basic, EvalfMixin):
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rmod__')
-    def __mod__(self, other):
+    def __mod__(self, other) -> Expr:
         return Mod(self, other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__mod__')
-    def __rmod__(self, other):
+    def __rmod__(self, other) -> Expr:
         return Mod(other, self)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rfloordiv__')
-    def __floordiv__(self, other):
+    def __floordiv__(self, other) -> Expr:
         from sympy.functions.elementary.integers import floor
         return floor(self / other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__floordiv__')
-    def __rfloordiv__(self, other):
+    def __rfloordiv__(self, other) -> Expr:
         from sympy.functions.elementary.integers import floor
         return floor(other / self)
 
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__rdivmod__')
-    def __divmod__(self, other):
+    def __divmod__(self, other) -> tuple[Expr, Expr]:
         from sympy.functions.elementary.integers import floor
         return floor(self / other), Mod(self, other)
 
     @sympify_return([('other', 'Expr')], NotImplemented)
     @call_highest_priority('__divmod__')
-    def __rdivmod__(self, other):
+    def __rdivmod__(self, other) -> tuple[Expr, Expr]:
         from sympy.functions.elementary.integers import floor
         return floor(other / self), Mod(other, self)
 
-    def __int__(self):
+    def __int__(self) -> int:
         # Although we only need to round to the units position, we'll
         # get one more digit so the extra testing below can be avoided
         # unless the rounded value rounded to an integer, e.g. if an
@@ -339,7 +339,7 @@ class Expr(Basic, EvalfMixin):
                 i -= isign
         return i
 
-    def __float__(self):
+    def __float__(self) -> float:
         # Don't bother testing if it's a number; if it's not this is going
         # to fail, and if it is we still need to check that it evalf'ed to
         # a number.
@@ -350,7 +350,7 @@ class Expr(Basic, EvalfMixin):
             raise TypeError("Cannot convert complex to float")
         raise TypeError("Cannot convert expression to float")
 
-    def __complex__(self):
+    def __complex__(self) -> complex:
         result = self.evalf()
         re, im = result.as_real_imag()
         return complex(float(re), float(im))
