@@ -31,7 +31,7 @@ There are three types of functions implemented in SymPy:
 """
 
 from __future__ import annotations
-from typing import Any
+from typing import Any, overload, Type
 from collections.abc import Iterable
 
 from .add import Add
@@ -439,8 +439,16 @@ class Function(Application, Expr):
     def _diff_wrt(self):
         return False
 
+    @overload
+    def __new__(cls, *args: str, **options) -> Type[AppliedUndef]:
+        ...
+
+    @overload
+    def __new__(cls, *args: int | float | Expr, **options) -> Expr:
+        ...
+
     @cacheit
-    def __new__(cls, *args, **options) -> Function:
+    def __new__(cls, *args, **options) -> Type[AppliedUndef] | Expr:
         # Handle calls like Function('f')
         if cls is Function:
             return UndefinedFunction(*args, **options)  # type: ignore
