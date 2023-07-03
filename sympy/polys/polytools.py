@@ -2269,8 +2269,7 @@ class Poly(Basic):
 
         """
         f = self
-
-        if not f.rep.dom.is_Field:
+        if not (f.rep.dom.is_Field or f.rep.dom.is_Laurent):
             return S.One, f
 
         dom = f.get_domain()

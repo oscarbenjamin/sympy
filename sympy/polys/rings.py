@@ -2011,6 +2011,8 @@ class PolyElement(DomainElement, DefaultPrinting, CantSympify, dict):
         if domain.is_Field:
             quo = domain.quo
             terms = [ (monom, quo(coeff, x)) for monom, coeff in f.iterterms() ]
+        elif domain.is_LaurentPolynomialRing and x.is_term:
+            terms = [ (monom, coeff / x) for monom, coeff in f.iterterms() ]
         else:
             terms = [ (monom, coeff // x) for monom, coeff in f.iterterms() if not (coeff % x) ]
 

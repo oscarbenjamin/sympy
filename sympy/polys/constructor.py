@@ -250,6 +250,14 @@ def _construct_composite(coeffs, opt):
 
             result.append(domain((numer, denom)))
 
+        if not opt.field:
+            # Try a Laurent polynomial ring instead of a rational function
+            # field if possible.
+            if all(expr.denom.is_term for expr in result):
+                dom = ground.laurent_poly_ring(*gens)
+                res = [dom((expr.numer, expr.denom)) for expr in result]
+                domain, result = dom, res
+
     return domain, result
 
 
