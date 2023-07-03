@@ -202,6 +202,7 @@ class LaurentPolyElement(DomainElement, DefaultPrinting, CantSympify):
         assert denom.ring == ring.numer_ring
         min_degrees = tuple(map(min, zip(*numer.itermonoms())))
         [(denom_monom, denom_coeff)] = denom.iterterms()
+        assert denom_coeff == 1
         for d, m in zip(denom_monom, min_degrees):
             assert d >= 0 and m >= 0, "Negative exponents in numer or denom"
             if check_cancelled:
@@ -458,8 +459,15 @@ class LaurentPolyElement(DomainElement, DefaultPrinting, CantSympify):
             raise ZeroDivisionError("Division by zero")
         if not other.is_term:
             raise NotImplementedError("Division by non-term")
-        numer = self.numer * other.denom
-        denom = self.denom * other.numer
+
+        [(monom, coeff)] = other.numer.items()
+        numer_ring = self.ring.numer_ring
+        monom = numer_ring.term_new(monom, numer_ring.domain.one)
+
+        # XXX: Use exquo_ground when available
+        numer = (self.numer * other.denom).quo_ground(coeff)
+        denom = self.denom * monom
+
         return self.from_poly_denom(self.ring, numer, denom)
 
     def exquo(self, other):

@@ -1,7 +1,8 @@
 from sympy.polys.domains.ring import Ring
+from sympy.polys.domains.compositedomain import CompositeDomain
 
 
-class LaurentPolynomialRing(Ring):
+class LaurentPolynomialRing(Ring, CompositeDomain):
     """Domain for Laurent polynomials.
 
     Examples
@@ -38,6 +39,10 @@ class LaurentPolynomialRing(Ring):
         self.gens = ring.gens
         self.one = ring.one
         self.zero = ring.zero
+        self.order = ring.order
+
+        # Needed in some places:
+        self.dom = self.domain
 
     def __str__(self):
         syms = [str(s) for s in self.symbols]
@@ -104,3 +109,9 @@ class LaurentPolynomialRing(Ring):
     def from_RealField(K1, a, K0):
         """Convert a mpmath `mpf` object to `dtype`. """
         return K1(K1.domain.convert(a, K0))
+
+    def from_PolynomialRing(K1, a, K0):
+        """Convert a polynomial to `dtype`. """
+        numer_ring = K1.ring.numer_ring
+        if K0.ring == numer_ring:
+            return K1.ring.from_polyelement(a)

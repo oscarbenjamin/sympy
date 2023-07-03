@@ -181,10 +181,8 @@ def test_sring():
     R = PolyRing("x,y,z", Rt, lex)
     assert sring(x + t*y/2 + t**2*z/3, x, y, z) == (R, R.x + Rt.t*R.y/2 + Rt.t**2*R.z/3)
 
-    Rt = LaurentPolyRing("t", ZZ, lex)
+    Rt = LaurentPolyRing("t", QQ, lex)
     R = PolyRing("x,y,z", Rt, lex)
-    Rt2 = FracField("t", ZZ, lex)
-    R2 = PolyRing("x,y,z", Rt2, lex)
     assert sring(x + 2*y/t + t**2*z/3, x, y, z) == (R, R.x + 2*R.y/Rt.t + Rt.t**2*R.z/3)
 
     Rt = FracField("t", ZZ, lex)
