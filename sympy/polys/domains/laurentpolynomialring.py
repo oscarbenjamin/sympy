@@ -103,15 +103,63 @@ class LaurentPolynomialRing(Ring, CompositeDomain):
         return poly.as_expr()
 
     def from_ZZ(K1, a, K0):
-        """Convert a an integer to `dtype`. """
+        """Convert an integer to ``dtype``. """
+        return K1(K1.domain.convert(a, K0))
+
+    def from_QQ(K1, a, K0):
+        """Convert a rational number to ``dtype``. """
+        return K1(K1.domain.convert(a, K0))
+
+    def from_GaussianIntegerRing(K1, a, K0):
+        """Convert a Gaussian integer to ``dtype``. """
+        return K1(K1.domain.convert(a, K0))
+
+    def from_GaussianRationalField(K1, a, K0):
+        """Convert a Gaussian rational number to ``dtype``. """
+        return K1(K1.domain.convert(a, K0))
+
+    def from_AlgebraicField(K1, a, K0):
+        """Convert an algebraic number to ``dtype``. """
         return K1(K1.domain.convert(a, K0))
 
     def from_RealField(K1, a, K0):
         """Convert a mpmath `mpf` object to `dtype`. """
         return K1(K1.domain.convert(a, K0))
 
+    def from_ComplexField(K1, a, K0):
+        """Convert a mpmath ``mpc`` object to ``dtype``. """
+        return K1(K1.domain.convert(a, K0))
+
     def from_PolynomialRing(K1, a, K0):
-        """Convert a polynomial to `dtype`. """
+        """Convert a polynomial to ``dtype``. """
         numer_ring = K1.ring.numer_ring
         if K0.ring == numer_ring:
             return K1.ring.from_polyelement(a)
+        else:
+            a = numer_ring.to_domain().convert(a, K0)
+            return K1.ring.from_polyelement(a)
+
+    def from_LaurentPolynomialRing(K1, a, K0):
+        """Convert a Laurent polynomial to ``dtype``. """
+        if K1 == K0:
+            return a
+        else:
+            R0 = K0.ring.numer_ring.to_domain()
+            R1 = K1.ring.numer_ring.to_domain()
+            numer = R1.convert(a.numer, R0)
+            denom = R1.convert(a.denom, R0)
+            return K1.ring.new(numer, denom)
+
+    def from_FractionField(K1, a, K0):
+        """Convert a rational function to ``dtype``. """
+        if not a.denom.is_term:
+            return None
+        numer_ring = K1.ring.numer_ring
+        if K0.field.ring == numer_ring:
+            return K1.ring.new(a.numer, a.denom)
+        else:
+            R1 = numer_ring.to_domain()
+            R0 = K0.field.ring.to_domain()
+            numer = R1.convert(a.numer, R0)
+            denom = R1.convert(a.denom, R0)
+            return K1.ring.new(numer, denom)

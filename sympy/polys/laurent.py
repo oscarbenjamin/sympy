@@ -202,7 +202,7 @@ class LaurentPolyElement(DomainElement, DefaultPrinting, CantSympify):
         assert denom.ring == ring.numer_ring
         min_degrees = tuple(map(min, zip(*numer.itermonoms())))
         [(denom_monom, denom_coeff)] = denom.iterterms()
-        assert denom_coeff == 1
+        assert ring.domain.is_one(denom_coeff)
         for d, m in zip(denom_monom, min_degrees):
             assert d >= 0 and m >= 0, "Negative exponents in numer or denom"
             if check_cancelled:

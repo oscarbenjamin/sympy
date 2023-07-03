@@ -51,6 +51,7 @@ def test_Domain_unify():
     assert unify(F3, RR) == RR
     assert unify(F3, CC) == CC
     assert unify(F3, ZZ[x]) == ZZ[x]
+    assert unify(F3, ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
     assert unify(F3, ZZ.frac_field(x)) == ZZ.frac_field(x)
     assert unify(F3, EX) == EX
 
@@ -61,6 +62,7 @@ def test_Domain_unify():
     assert unify(ZZ, RR) == RR
     assert unify(ZZ, CC) == CC
     assert unify(ZZ, ZZ[x]) == ZZ[x]
+    assert unify(ZZ, ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
     assert unify(ZZ, ZZ.frac_field(x)) == ZZ.frac_field(x)
     assert unify(ZZ, EX) == EX
 
@@ -71,6 +73,7 @@ def test_Domain_unify():
     assert unify(QQ, RR) == RR
     assert unify(QQ, CC) == CC
     assert unify(QQ, ZZ[x]) == QQ[x]
+    assert unify(QQ, ZZ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
     assert unify(QQ, ZZ.frac_field(x)) == QQ.frac_field(x)
     assert unify(QQ, EX) == EX
 
@@ -83,6 +86,8 @@ def test_Domain_unify():
     assert unify(ZZ_I, CC) == CC
     assert unify(ZZ_I, ZZ[x]) == ZZ_I[x]
     assert unify(ZZ_I, ZZ_I[x]) == ZZ_I[x]
+    assert unify(ZZ_I, ZZ.laurent_poly_ring(x)) == ZZ_I.laurent_poly_ring(x)
+    assert unify(ZZ_I, ZZ_I.laurent_poly_ring(x)) == ZZ_I.laurent_poly_ring(x)
     assert unify(ZZ_I, ZZ.frac_field(x)) == ZZ_I.frac_field(x)
     assert unify(ZZ_I, ZZ_I.frac_field(x)) == ZZ_I.frac_field(x)
     assert unify(ZZ_I, EX) == EX
@@ -98,6 +103,10 @@ def test_Domain_unify():
     assert unify(QQ_I, ZZ_I[x]) == QQ_I[x]
     assert unify(QQ_I, QQ[x]) == QQ_I[x]
     assert unify(QQ_I, QQ_I[x]) == QQ_I[x]
+    assert unify(QQ_I, ZZ.laurent_poly_ring(x)) == QQ_I.laurent_poly_ring(x)
+    assert unify(QQ_I, ZZ_I.laurent_poly_ring(x)) == QQ_I.laurent_poly_ring(x)
+    assert unify(QQ_I, QQ.laurent_poly_ring(x)) == QQ_I.laurent_poly_ring(x)
+    assert unify(QQ_I, QQ_I.laurent_poly_ring(x)) == QQ_I.laurent_poly_ring(x)
     assert unify(QQ_I, ZZ.frac_field(x)) == QQ_I.frac_field(x)
     assert unify(QQ_I, ZZ_I.frac_field(x)) == QQ_I.frac_field(x)
     assert unify(QQ_I, QQ.frac_field(x)) == QQ_I.frac_field(x)
@@ -111,6 +120,7 @@ def test_Domain_unify():
     assert unify(RR, RR) == RR
     assert unify(RR, CC) == CC
     assert unify(RR, ZZ[x]) == RR[x]
+    assert unify(RR, ZZ.laurent_poly_ring(x)) == RR.laurent_poly_ring(x)
     assert unify(RR, ZZ.frac_field(x)) == RR.frac_field(x)
     assert unify(RR, EX) == EX
     assert RR[x].unify(ZZ.frac_field(y)) == RR.frac_field(x, y)
@@ -122,6 +132,7 @@ def test_Domain_unify():
     assert unify(CC, RR) == CC
     assert unify(CC, CC) == CC
     assert unify(CC, ZZ[x]) == CC[x]
+    assert unify(CC, ZZ.laurent_poly_ring(x)) == CC.laurent_poly_ring(x)
     assert unify(CC, ZZ.frac_field(x)) == CC.frac_field(x)
     assert unify(CC, EX) == EX
 
@@ -132,8 +143,20 @@ def test_Domain_unify():
     assert unify(ZZ[x], RR) == RR[x]
     assert unify(ZZ[x], CC) == CC[x]
     assert unify(ZZ[x], ZZ[x]) == ZZ[x]
+    assert unify(ZZ[x], ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
     assert unify(ZZ[x], ZZ.frac_field(x)) == ZZ.frac_field(x)
     assert unify(ZZ[x], EX) == EX
+
+    assert unify(ZZ.laurent_poly_ring(x), F3) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), ZZ) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), QQ) == QQ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), ALG) == ALG.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), RR) == RR.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), CC) == CC.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), ZZ[x]) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.frac_field(x)) == ZZ.frac_field(x)
+    assert unify(ZZ.laurent_poly_ring(x), EX) == EX
 
     assert unify(ZZ.frac_field(x), F3) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), ZZ) == ZZ.frac_field(x)
@@ -142,6 +165,7 @@ def test_Domain_unify():
     assert unify(ZZ.frac_field(x), RR) == RR.frac_field(x)
     assert unify(ZZ.frac_field(x), CC) == CC.frac_field(x)
     assert unify(ZZ.frac_field(x), ZZ[x]) == ZZ.frac_field(x)
+    assert unify(ZZ.frac_field(x), ZZ.laurent_poly_ring(x)) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), ZZ.frac_field(x)) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), EX) == EX
 
@@ -152,6 +176,7 @@ def test_Domain_unify():
     assert unify(EX, RR) == EX
     assert unify(EX, CC) == EX
     assert unify(EX, ZZ[x]) == EX
+    assert unify(EX, ZZ.laurent_poly_ring(x)) == EX
     assert unify(EX, ZZ.frac_field(x)) == EX
     assert unify(EX, EX) == EX
 
@@ -175,6 +200,26 @@ def test_Domain_unify_composite():
     assert unify(QQ, ZZ.poly_ring(x, y)) == QQ.poly_ring(x, y)
     assert unify(ZZ, QQ.poly_ring(x, y)) == QQ.poly_ring(x, y)
     assert unify(QQ, QQ.poly_ring(x, y)) == QQ.poly_ring(x, y)
+
+    assert unify(ZZ.laurent_poly_ring(x), ZZ) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), QQ) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), ZZ) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), QQ) == QQ.laurent_poly_ring(x)
+
+    assert unify(ZZ, ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
+    assert unify(QQ, ZZ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(ZZ, QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(QQ, QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+
+    assert unify(ZZ.laurent_poly_ring(x, y), ZZ) == ZZ.laurent_poly_ring(x, y)
+    assert unify(ZZ.laurent_poly_ring(x, y), QQ) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), ZZ) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), QQ) == QQ.laurent_poly_ring(x, y)
+
+    assert unify(ZZ, ZZ.laurent_poly_ring(x, y)) == ZZ.laurent_poly_ring(x, y)
+    assert unify(QQ, ZZ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(ZZ, QQ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ, QQ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
 
     assert unify(ZZ.frac_field(x), ZZ) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), QQ) == QQ.frac_field(x)
@@ -216,6 +261,26 @@ def test_Domain_unify_composite():
     assert unify(QQ.poly_ring(x, y), ZZ.poly_ring(x, z)) == QQ.poly_ring(x, y, z)
     assert unify(QQ.poly_ring(x, y), QQ.poly_ring(x, z)) == QQ.poly_ring(x, y, z)
 
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), ZZ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x)
+
+    assert unify(ZZ.laurent_poly_ring(x, y), ZZ.laurent_poly_ring(x)) == ZZ.laurent_poly_ring(x, y)
+    assert unify(ZZ.laurent_poly_ring(x, y), QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), ZZ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), QQ.laurent_poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.laurent_poly_ring(x, y)) == ZZ.laurent_poly_ring(x, y)
+    assert unify(ZZ.laurent_poly_ring(x), QQ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x), ZZ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x), QQ.laurent_poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+
+    assert unify(ZZ.laurent_poly_ring(x, y), ZZ.laurent_poly_ring(x, z)) == ZZ.laurent_poly_ring(x, y, z)
+    assert unify(ZZ.laurent_poly_ring(x, y), QQ.laurent_poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
+    assert unify(QQ.laurent_poly_ring(x, y), ZZ.laurent_poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
+    assert unify(QQ.laurent_poly_ring(x, y), QQ.laurent_poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
+
     assert unify(ZZ.frac_field(x), ZZ.frac_field(x)) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), QQ.frac_field(x)) == QQ.frac_field(x)
     assert unify(QQ.frac_field(x), ZZ.frac_field(x)) == QQ.frac_field(x)
@@ -255,6 +320,26 @@ def test_Domain_unify_composite():
     assert unify(ZZ.poly_ring(x, y), QQ.frac_field(x, z)) == ZZ.frac_field(x, y, z)
     assert unify(QQ.poly_ring(x, y), ZZ.frac_field(x, z)) == ZZ.frac_field(x, y, z)
     assert unify(QQ.poly_ring(x, y), QQ.frac_field(x, z)) == QQ.frac_field(x, y, z)
+
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.poly_ring(x)) == ZZ.laurent_poly_ring(x)
+    assert unify(ZZ.laurent_poly_ring(x), QQ.poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), ZZ.poly_ring(x)) == QQ.laurent_poly_ring(x)
+    assert unify(QQ.laurent_poly_ring(x), QQ.poly_ring(x)) == QQ.laurent_poly_ring(x)
+
+    assert unify(ZZ.laurent_poly_ring(x, y), ZZ.poly_ring(x)) == ZZ.laurent_poly_ring(x, y)
+    assert unify(ZZ.laurent_poly_ring(x, y), QQ.poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), ZZ.poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x, y), QQ.poly_ring(x)) == QQ.laurent_poly_ring(x, y)
+
+    assert unify(ZZ.laurent_poly_ring(x), ZZ.poly_ring(x, y)) == ZZ.laurent_poly_ring(x, y)
+    assert unify(ZZ.laurent_poly_ring(x), QQ.poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x), ZZ.poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+    assert unify(QQ.laurent_poly_ring(x), QQ.poly_ring(x, y)) == QQ.laurent_poly_ring(x, y)
+
+    assert unify(ZZ.laurent_poly_ring(x, y), ZZ.poly_ring(x, z)) == ZZ.laurent_poly_ring(x, y, z)
+    assert unify(ZZ.laurent_poly_ring(x, y), QQ.poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
+    assert unify(QQ.laurent_poly_ring(x, y), ZZ.poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
+    assert unify(QQ.laurent_poly_ring(x, y), QQ.poly_ring(x, z)) == QQ.laurent_poly_ring(x, y, z)
 
     assert unify(ZZ.frac_field(x), ZZ.poly_ring(x)) == ZZ.frac_field(x)
     assert unify(ZZ.frac_field(x), QQ.poly_ring(x)) == ZZ.frac_field(x)
@@ -602,6 +687,7 @@ def test_Domain_convert():
         domains = [
             K,
             K[y], K[z], K[y, z],
+            K.laurent_poly_ring(y), K.laurent_poly_ring(z), K.laurent_poly_ring(y, z),
             K.frac_field(y), K.frac_field(z), K.frac_field(y, z),
             # XXX: These should be tested and made to work...
             # K.old_poly_ring(y), K.old_frac_field(y),
@@ -631,7 +717,9 @@ def test_Domain_convert():
     K2 = ZZ.frac_field(x)
     K3 = QQ[x]
     K4 = ZZ[x]
-    Ks = [K1, K2, K3, K4]
+    K5 = QQ.laurent_poly_ring(x)
+    K6 = ZZ.laurent_poly_ring(x)
+    Ks = [K1, K2, K3, K4, K5, K6]
     for Ka, Kb in product(Ks, Ks):
         assert Ka.convert_from(Kb.from_sympy(x), Kb) == Ka.from_sympy(x)
 
