@@ -14,14 +14,6 @@ from sympy.polys.polyerrors import CoercionFailed
 from sympy.polys.rings import PolyElement, PolyRing
 from sympy.printing.defaults import DefaultPrinting
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sympy.core.expr import Expr
-    from typing import Iterable
-
-Monomial = tuple[int, ...]
-
 
 def laurent_ring(symbols, domain, order='lex'):
     """Construct a Laurent polynomial ring.
@@ -95,7 +87,7 @@ class LaurentPolyRing:
         syms = ', '.join(map(str, self.symbols))
         return f"Laurent polynomial ring in {syms} over {self.domain} with {self.order} order"
 
-    def new(self, numer, denom):
+    def new(self, numer, denom=None):
         """Construct a new Laurent polynomial from a numerator and denominator."""
         return LaurentPolyElement(self, numer, denom)
 
@@ -106,7 +98,8 @@ class LaurentPolyRing:
             denom = self.numer_ring.ring_new(denom)
             return self.new(numer, denom)
         else:
-            return self.ground_new(element)
+            numer = self.numer_ring.ring_new(element)
+            return self.new(numer)
 
     def ground_new(self, coeff):
         """Construct a new Laurent polynomial from an element of the ground domain."""
@@ -178,9 +171,13 @@ class LaurentPolyElement(DomainElement, DefaultPrinting, CantSympify):
     def __init__(self,
         ring: LaurentPolynomialRing,
         numer: PolyElement,
-        denom: PolyElement,
+        denom: PolyElement = None,
     ):
+        if denom is None:
+            denom = ring.numer_ring.one
+
         self._check(ring, numer, denom)
+
         self.ring = ring
         self.numer = numer
         self.denom = denom
@@ -198,11 +195,17 @@ class LaurentPolyElement(DomainElement, DefaultPrinting, CantSympify):
 
     @classmethod
     def _check(self, ring, numer, denom, check_cancelled=True):
+        """Validate the internal invariants."""
+        assert type(ring) is LaurentPolyRing
+        assert isinstance(numer, PolyElement)
+        assert isinstance(denom, PolyElement)
         assert numer.ring == ring.numer_ring
         assert denom.ring == ring.numer_ring
-        min_degrees = tuple(map(min, zip(*numer.itermonoms())))
+
         [(denom_monom, denom_coeff)] = denom.iterterms()
         assert ring.domain.is_one(denom_coeff)
+
+        min_degrees = tuple(map(min, zip(*numer.itermonoms())))
         for d, m in zip(denom_monom, min_degrees):
             assert d >= 0 and m >= 0, "Negative exponents in numer or denom"
             if check_cancelled:
