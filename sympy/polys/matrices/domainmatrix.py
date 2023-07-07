@@ -1433,6 +1433,54 @@ class DomainMatrix:
             raise DMNonSquareMatrixError
         return self.rep.det()
 
+    def inv_den(self):
+        """
+        Return the inverse as a :class:`DomainMatrix` with denominator.
+
+        Examples
+        ========
+
+        >>> from sympy import ZZ
+        >>> from sympy.polys.matrices import DomainMatrix
+        >>> A = DomainMatrix([
+        ...     [ZZ(2), ZZ(-1), ZZ(0)],
+        ...     [ZZ(-1), ZZ(2), ZZ(-1)],
+        ...     [ZZ(0), ZZ(0), ZZ(2)]], (3, 3), ZZ)
+        >>> Ainv, den = A.inv_den()
+        >>> den.to_sympy()
+        6
+        >>> Ainv
+        DomainMatrix([[4, 2, 1], [2, 4, 2], [0, 0, 3]], (3, 3), QQ)
+        >>> A * Ainv = den * A.eye((3, 3), ZZ)
+        True
+
+        See Also
+        ========
+
+        inv
+        det
+        """
+        A = self
+        m, n = A.shape
+
+        if m != n:
+            raise DMNonSquareMatrixError("Matrix must be square")
+
+        I_m = A.eye((m, m), A.domain)
+
+        if m == 1:
+            A_inv, A_den = I_m, A[0, 0]
+        else:
+            cp = A.charpoly_ds()
+
+            A_inv = (-cp[0])*A + (-cp[1])*I_m
+            for cpi in cp[2:-1]:
+                A_inv = A_inv*A + (-cpi)*I_m
+
+            A_den = cp[-1]
+
+        return A_inv, A_den
+
     def lu(self):
         r"""
         Returns Lower and Upper decomposition of the DomainMatrix
@@ -1573,6 +1621,19 @@ class DomainMatrix:
         if m != n:
             raise DMNonSquareMatrixError("not square")
         return self.rep.charpoly()
+
+    def charpoly_ds(self):
+        """
+        Characteristic polynomial as a list of :class:`DomainScalar`.
+
+        See Also
+        ========
+
+        charpoly
+        """
+        p = self.charpoly()
+        p_ds = [DomainScalar(c, self.domain) for c in p]
+        return p_ds
 
     @classmethod
     def eye(cls, shape, domain):
