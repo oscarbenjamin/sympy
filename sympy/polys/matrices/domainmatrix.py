@@ -18,9 +18,15 @@ from ..domains import Domain
 
 from ..constructor import construct_domain
 
-from .exceptions import (DMNonSquareMatrixError, DMShapeError,
-                         DMDomainError, DMFormatError, DMBadInputError,
-                         DMNotAField)
+from .exceptions import (
+    DMFormatError,
+    DMBadInputError,
+    DMShapeError,
+    DMDomainError,
+    DMNotAField,
+    DMNonSquareMatrixError,
+    DMNonInvertibleMatrixError
+)
 
 from .ddm import DDM
 
@@ -1086,6 +1092,9 @@ class DomainMatrix:
         """ Method for Scalar Division"""
         if isinstance(lamda, int) or ZZ.of_type(lamda):
             lamda = DomainScalar(ZZ(lamda), ZZ)
+        elif A.domain.is_Field and lamda in A.domain:
+            K = A.domain
+            lamda = DomainScalar(K.convert(lamda), K)
 
         if not isinstance(lamda, DomainScalar):
             return NotImplemented
@@ -1094,7 +1103,7 @@ class DomainMatrix:
         if lamda.element == lamda.domain.zero:
             raise ZeroDivisionError
         if lamda.element == lamda.domain.one:
-            return A.to_field()
+            return A
 
         return A.mul(1 / lamda.element)
 
@@ -1433,9 +1442,90 @@ class DomainMatrix:
             raise DMNonSquareMatrixError
         return self.rep.det()
 
+    def adj_det(self):
+        """
+        Adjugate and determinant of a square :class:`DomainMatrix`.
+
+        Returns
+        =======
+
+        (adjugate, determinant) : (DomainMatrix, DomainScalar)
+            The adjugate matrix and determinant of this matrix.
+
+        Examples
+        ========
+
+        >>> from sympy import ZZ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([
+        ...     [ZZ(1), ZZ(2)],
+        ...     [ZZ(3), ZZ(4)]], ZZ)
+        >>> adjA, detA = A.adj_det()
+        >>> adjA
+        DomainMatrix([[4, -2], [-3, 1]], (2, 2), ZZ)
+        >>> detA
+        -2
+
+        See Also
+        ========
+
+        adjugate
+        det
+        """
+        m, n = self.shape
+        I_m = self.eye((m, m), self.domain)
+        return self.solve_det_charpoly(I_m, check=False)
+
+    def adjugate(self):
+        """
+        Adjugate of a square :class:`DomainMatrix`.
+
+        The adjugate matrix is the transpose of the cofactor matrix and is
+        related to the inverse by::
+
+            adj(A) = det(A) * A.inv()
+
+        Unlike the inverse matrix the adjugate matrix can be computed and
+        expressed without division or fractions in the ground domain.
+
+        Examples
+        ========
+
+        >>> from sympy import ZZ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([[ZZ(1), ZZ(2)], [ZZ(3), ZZ(4)]], ZZ)
+        >>> A.adjugate()
+        DomainMatrix([[4, -2], [-3, 1]], (2, 2), ZZ)
+
+        Returns
+        =======
+
+        DomainMatrix
+            The adjugate matrix of this matrix with the same domain.
+
+        See Also
+        ========
+
+        adj_det
+        """
+        adjA, detA = self.adj_det()
+        return adjA
+
     def inv_den(self):
         """
         Return the inverse as a :class:`DomainMatrix` with denominator.
+
+        Returns
+        =======
+
+        (inv, den) : (DomainMatrix, DomainScalar)
+            The inverse matrix and its denominator.
+
+        The ratio ``inv/den`` is equivalent to ``adj/det`` except that some
+        factors might be cancelled leading to smaller expressions. If the
+        actual adjugate and determinant are needed, use :meth:`adj_det`
+        instead. If the intention is to compute the inverse matrix or solve a
+        system of equations then it is better to use :meth:`inv_den`.
 
         Examples
         ========
@@ -1447,11 +1537,11 @@ class DomainMatrix:
         ...     [ZZ(-1), ZZ(2), ZZ(-1)],
         ...     [ZZ(0), ZZ(0), ZZ(2)]], (3, 3), ZZ)
         >>> Ainv, den = A.inv_den()
-        >>> den.to_sympy()
+        >>> den
         6
         >>> Ainv
-        DomainMatrix([[4, 2, 1], [2, 4, 2], [0, 0, 3]], (3, 3), QQ)
-        >>> A * Ainv = den * A.eye((3, 3), ZZ)
+        DomainMatrix([[4, 2, 1], [2, 4, 2], [0, 0, 3]], (3, 3), ZZ)
+        >>> A * Ainv == den * A.I().to_dense()
         True
 
         See Also
@@ -1459,6 +1549,245 @@ class DomainMatrix:
 
         inv
         det
+        adj_det
+        """
+        return self.solve_det_charpoly(self.I())
+
+    def solve_den(self, b):
+        """
+        Solve matrix equation $Ax = b$ without fractions in the ground domain.
+
+        Examples
+        ========
+
+        Solve a matrix equation over the integers:
+
+        >>> from sympy import ZZ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([[ZZ(1), ZZ(2)], [ZZ(3), ZZ(4)]], ZZ)
+        >>> b = DM([[ZZ(5)], [ZZ(6)]], ZZ)
+        >>> xnum, xden = A.solve_den(b)
+        >>> xden
+        -2
+        >>> xnum
+        DomainMatrix([[8], [-9]], (2, 1), ZZ)
+        >>> A * xnum == xden * b
+        True
+
+        Solve a matrix equation over a polynomial ring:
+
+        >>> from sympy import ZZ, symbols
+        >>> a, b, c, d, e, f = symbols('a b c d e f')
+        >>> R = ZZ[a, b, c, d, e, f]
+        >>> M = DM([[a, b], [c, d]], R)
+        >>> b = DM([[e], [f]], R)
+        >>> M.to_Matrix()
+        Matrix([
+        [a, b],
+        [c, d]])
+        >>> b.to_Matrix()
+        Matrix([
+        [e],
+        [f]])
+        >>> xnum, xden = M.solve_det_charpoly(b)
+        >>> xden
+        a*d - b*c
+        >>> xnum.to_Matrix()
+        Matrix([
+        [-b*f + d*e],
+        [ a*f - c*e]])
+        >>> M * xnum == xden * b
+        True
+
+        The solution can be expressed over a fraction field which will cancel
+        any gcd between the denominator and the elements of the numerator:
+
+        >>> xsol = xnum.to_field() / xden
+        >>> xsol.to_Matrix()
+        Matrix([
+        [(-b*f + d*e)/(a*d - b*c)],
+        [ (a*f - c*e)/(a*d - b*c)]])
+        >>> (M * xsol).to_Matrix() == b.to_Matrix()
+        True
+
+        The solution can also be expressed as a ``Matrix`` without attempting
+        any cancellation between the numerator and denominator:
+
+        >>> xnum.to_Matrix() / xnum.domain.to_sympy(xden)
+        Matrix([
+        [(-b*f + d*e)/(a*d - b*c)],
+        [ (a*f - c*e)/(a*d - b*c)]])
+
+        Parameters
+        ==========
+
+        self : DomainMatrix
+            The ``n x n`` matrix $A$ in the equation $Ax = b$. Must be square
+            and invertible.
+        b : DomainMatrix
+            The ``n x m`` matrix $b$ for the rhs.
+        cp : list, optional
+            The characteristic polynomial of the matrix $A$. If not given, it
+            will be computed using :meth:`charpoly`.
+
+        Returns
+        =======
+
+        (xnum, xden) : (DomainMatrix, DomainElement)
+            The solution of the equation $Ax = b$ as a ``n x m`` matrix
+            numerator and scalar denominator pair.
+
+        The solution $x$ is given by ``x = xnum / xden``. The division free
+        invariant is ``A * xnum == xden * b``. If $A$ is square then the
+        denominator ``xden`` will be a divisor of the determinant $det(A)$.
+
+        See Also
+        ========
+
+        solve_det_charpoly
+        inv_den
+        """
+        m, n = self.shape
+        bm, bn = b.shape
+
+        if m != n:
+            # XXX: Add support using fraction-free LU.
+            raise DMNonSquareMatrixError("Matrix must be square.")
+
+        if m != bm:
+            raise DMShapeError("Matrix equation shape mismatch.")
+
+        # XXX: Add more methods.
+        return self.solve_det_charpoly(b)
+
+    def solve_det_charpoly(self, b, cp=None, check=True):
+        """
+        Solve matrix equation $Ax = b$ using the characteristic polynomial.
+
+        This method solves the matrix equation $Ax = b$ for $x$ using the
+        characteristic polynomial without any division or fractions in the
+        ground domain.
+
+        Examples
+        ========
+
+        Solve a matrix equation over the integers:
+
+        >>> from sympy import ZZ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([[ZZ(1), ZZ(2)], [ZZ(3), ZZ(4)]], ZZ)
+        >>> b = DM([[ZZ(5)], [ZZ(6)]], ZZ)
+        >>> xnum, detA = A.solve_det_charpoly(b)
+        >>> detA
+        -2
+        >>> xnum
+        DomainMatrix([[8], [-9]], (2, 1), ZZ)
+        >>> A * xnum == detA * b
+        True
+
+        Parameters
+        ==========
+
+        self : DomainMatrix
+            The ``n x n`` matrix `A` in the equation `Ax = b`. Must be square
+            and invertible.
+        b : DomainMatrix
+            The ``n x m`` matrix `b` for the rhs.
+        cp : list, optional
+            The characteristic polynomial of the matrix `A`. If not given, it
+            will be computed using :meth:`charpoly`.
+
+        Returns
+        =======
+
+        (xnum, detA) : (DomainMatrix, DomainElement)
+            The solution of the equation `Ax = b` as a matrix numerator and
+            scalar denominator pair. The denominator is equal to the
+            determinant of `A` and the numerator is ``adj(A)*b``.
+
+        The solution $x$ is given by ``x = xnum / detA``. The division free
+        invariant is ``A * xnum == detA * b``.
+
+        If ``b`` is the identity matrix, then ``xnum`` is the adjugate matrix
+        and we have ``A * adj(A) == detA * I``.
+
+        See Also
+        ========
+
+        solve_den
+        inv_den
+        """
+        A, b = self.unify(b)
+        m, n = self.shape
+        mb, nb = b.shape
+
+        if m != n:
+            raise DMNonSquareMatrixError("Matrix must be square")
+
+        if mb != m:
+            raise DMShapeError("Matrix and vector must have the same number of rows")
+
+        if cp is None:
+            cp = A.charpoly()
+
+        if check and not cp[-1]:
+            raise DMNonInvertibleMatrixError("Matrix is not invertible")
+
+        return self._solve_det_charpoly(b, cp)
+
+    def _solve_det_charpoly(self, b, cp):
+        """Inner routine for solve_det_charpoly."""
+        #
+        # Compute det(A)*inv(A)*b using Horner's method without constructing
+        # inv(A) explicitly. Cayley-Hamilton says that a matrix satisfies its
+        # own minimal polynomial
+        #
+        #   p[0]*A^n + p[1]*A^(n-1) + ... + p[n]*I = 0
+        #
+        # with p[0]=1 and p[n]=(-1)^n*det(A) or
+        #
+        #   det(A)*I = -(-1)^n*(p[0]*A^(n-1) + p[1]*A^(n-2) + ... + p[n-1]*A).
+        #
+        # Define a new polynomial f with f[i] = -(-1)^n*p[i] and
+        #
+        #   det(A)*I = f[0]*A^n + f[1]*A^(n-1) + ... + f[n-1]*A.
+        #
+        A = self
+
+        if len(cp) % 2:
+            # n is even
+            detA = cp[-1]
+            f = [-cpi for cpi in cp[:-1]]
+        else:
+            # n is odd
+            detA = -cp[-1]
+            f = cp[:-1]
+
+        adjA_b = self.eval_poly_mul(f, b)
+
+        return (adjA_b, detA)
+
+    def eval_poly(self, p):
+        """
+        Evaluate polynomial function of a matrix $p(A)$.
+
+        Examples
+        ========
+
+        >>> from sympy import QQ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([[QQ(1), QQ(2)], [QQ(3), QQ(4)]], QQ)
+        >>> p = [QQ(1), QQ(2), QQ(3)]
+        >>> p_A = A.eval_poly(p)
+        >>> p_A
+        DomainMatrix([[12, 14], [21, 33]], (2, 2), QQ)
+        >>> p_A == p[0]*A**2 + p[1]*A + p[2]*A**0
+        True
+
+        See Also
+        ========
+
+        eval_poly_mul
         """
         A = self
         m, n = A.shape
@@ -1466,20 +1795,89 @@ class DomainMatrix:
         if m != n:
             raise DMNonSquareMatrixError("Matrix must be square")
 
-        I_m = A.eye((m, m), A.domain)
+        if not p:
+            return self.zeros(self.shape, self.domain)
+        elif len(p) == 1:
+            return p[0] * self.eye(self.shape, self.domain)
 
-        if m == 1:
-            A_inv, A_den = I_m, A[0, 0]
-        else:
-            cp = A.charpoly_ds()
+        # Evaluate p(A) using Horner's method:
+        # XXX: Use Paterson-Stockmeyer method?
+        I = A.I()
+        p_A = p[0] * I
+        for pi in p[1:]:
+            p_A = A*p_A + pi*I
 
-            A_inv = (-cp[0])*A + (-cp[1])*I_m
-            for cpi in cp[2:-1]:
-                A_inv = A_inv*A + (-cpi)*I_m
+        return p_A
 
-            A_den = cp[-1]
+    def eval_poly_mul(self, p, B):
+        """
+        Evaluate polynomial matrix product $p(A)*B$.
 
-        return A_inv, A_den
+        Evaluate the polynomial matrix product $p(A)*B$ using Horner's method
+        without creating the matrix $p(A)$ explicitly. If $B$ is a column
+        matrix then this method will only use matrix-vector multiplies and no
+        matrix-matrix multiplies are needed.
+
+        If $B$ is square or wide or if $A$ can be represented in a simpler
+        domain than $B$ then it might be faster to evaluate $p(A)$ explicitly
+        (see :func:`eval_poly`) and then multiply with $B$.
+
+        Examples
+        ========
+
+        >>> from sympy import QQ
+        >>> from sympy.polys.matrices import DM
+        >>> A = DM([[QQ(1), QQ(2)], [QQ(3), QQ(4)]], QQ)
+        >>> b = DM([[QQ(5)], [QQ(6)]], QQ)
+        >>> p = [QQ(1), QQ(2), QQ(3)]
+        >>> p_A_b = A.eval_poly_mul(p, b)
+        >>> p_A_b
+        DomainMatrix([[144], [303]], (2, 1), QQ)
+        >>> p_A_b == p[0]*A**2*b + p[1]*A*b + p[2]*b
+        True
+        >>> A.eval_poly_mul(p, b) == A.eval_poly(p)*b
+        True
+
+        See Also
+        ========
+
+        eval_poly
+        solve_det_charpoly
+        """
+        A = self
+        m, n = A.shape
+        mb, nb = B.shape
+
+        if m != n:
+            raise DMNonSquareMatrixError("Matrix must be square")
+
+        if mb != n:
+            raise DMShapeError("Matrices are not aligned")
+
+        if A.domain != B.domain:
+            raise DMDomainError("Matrices must have the same domain")
+        #
+        # Given a polynomial p(x) = p[0] + p[1]*x + ... + p[n-1]*x^(n-1) and a
+        # matrix A we want to find
+        #
+        #   p(A)*B = p[0]*A^n*B + p[1]*A^(n-1)*B + ... + p[n-1]*A*B
+        #
+        # Refactor to find
+        #
+        #   p(A)*B = A*(...A*(A*(A*(p[0]*B) - p[1]*B) - p[2]*B) - ...) - p[n-1]*B
+        #
+        # where each pair of Brackets represents one iteration of the loop
+        # Below starting from the innermost p[0]*B. If B is a column matrix
+        # then products like A*(...) are matrix-vector multiplies and products
+        # like p[i]*B are scalar-vector multiplies so there are no
+        # matrix-matrix multiplies.
+        #
+        p_A_B = p[0]*B
+
+        for p_i in p[1:]:
+            p_A_B = A*p_A_B + p_i*B
+
+        return p_A_B
 
     def lu(self):
         r"""
@@ -1490,7 +1888,8 @@ class DomainMatrix:
 
         (L, U, exchange)
             L, U are Lower and Upper decomposition of the DomainMatrix,
-            exchange is the list of indices of rows exchanged in the decomposition.
+            exchange is the list of indices of rows exchanged in the
+            decomposition.
 
         Raises
         ======
@@ -1506,8 +1905,13 @@ class DomainMatrix:
         >>> A = DomainMatrix([
         ...    [QQ(1), QQ(-1)],
         ...    [QQ(2), QQ(-2)]], (2, 2), QQ)
-        >>> A.lu()
-        (DomainMatrix([[1, 0], [2, 1]], (2, 2), QQ), DomainMatrix([[1, -1], [0, 0]], (2, 2), QQ), [])
+        >>> L, U, exchange = A.lu()
+        >>> L
+        DomainMatrix([[1, 0], [2, 1]], (2, 2), QQ)
+        >>> U
+        DomainMatrix([[1, -1], [0, 0]], (2, 2), QQ)
+        >>> exchange
+        []
 
         See Also
         ========
@@ -1638,7 +2042,7 @@ class DomainMatrix:
     @classmethod
     def eye(cls, shape, domain):
         r"""
-        Return identity matrix of size n
+        Return identity matrix of size n or shape (m, n).
 
         Examples
         ========
@@ -1652,6 +2056,26 @@ class DomainMatrix:
         if isinstance(shape, int):
             shape = (shape, shape)
         return cls.from_rep(SDM.eye(shape, domain))
+
+    def I(self, m=None):
+        """
+        Return identity matrix with the same shape and domain as ``self``.
+
+        Examples
+        ========
+
+        >>> from sympy.polys.matrices import DM
+        >>> from sympy import QQ
+        >>> M = DM([[1, 2], [3, 4]], QQ)
+        >>> I2 = M.I()
+        >>> I2
+        DomainMatrix({0: {0: 1}, 1: {1: 1}}, (2, 2), QQ)
+        >>> M * I2 == I2 * M == M
+        True
+        """
+        if m is None:
+            m = self.shape
+        return self.eye(m, self.domain)
 
     @classmethod
     def diag(cls, diagonal, domain, shape=None):
