@@ -1410,19 +1410,19 @@ class DomainMatrix:
 
     def det(self):
         r"""
-        Returns the determinant of a Square DomainMatrix
+        Returns the determinant of a square :class:`DomainMatrix`.
 
         Returns
         =======
 
-        S.Complexes
-            determinant of Square DomainMatrix
+        determinant: DomainElement
+            Determinant of the matrix.
 
         Raises
         ======
 
         ValueError
-            If the domain of DomainMatrix not a Field
+            If the domain of DomainMatrix is not a Field
 
         Examples
         ========
@@ -1518,14 +1518,15 @@ class DomainMatrix:
         Returns
         =======
 
-        (inv, den) : (DomainMatrix, DomainScalar)
+        (inv, den) : (:class:`DomainMatrix`, :class:`DomainElement`)
             The inverse matrix and its denominator.
 
         The ratio ``inv/den`` is equivalent to ``adj/det`` except that some
         factors might be cancelled leading to smaller expressions. If the
         actual adjugate and determinant are needed, use :meth:`adj_det`
         instead. If the intention is to compute the inverse matrix or solve a
-        system of equations then it is better to use :meth:`inv_den`.
+        system of equations then it is probably more efficient to use
+        :meth:`inv_den`.
 
         Examples
         ========
@@ -1621,12 +1622,12 @@ class DomainMatrix:
         Parameters
         ==========
 
-        self : DomainMatrix
+        self : :class:`DomainMatrix`
             The ``n x n`` matrix $A$ in the equation $Ax = b$. Must be square
             and invertible.
-        b : DomainMatrix
+        b : :class:`DomainMatrix`
             The ``n x m`` matrix $b$ for the rhs.
-        cp : list, optional
+        cp : list of :class:`DomainElement`, optional
             The characteristic polynomial of the matrix $A$. If not given, it
             will be computed using :meth:`charpoly`.
 
@@ -1634,8 +1635,9 @@ class DomainMatrix:
         =======
 
         (xnum, xden) : (DomainMatrix, DomainElement)
-            The solution of the equation $Ax = b$ as a ``n x m`` matrix
-            numerator and scalar denominator pair.
+            The solution of the equation $Ax = b$ as a pair consisting of an
+            ``n x m`` matrix numerator ``xnum`` and a scalar denominator
+            ``xden``.
 
         The solution $x$ is given by ``x = xnum / xden``. The division free
         invariant is ``A * xnum == xden * b``. If $A$ is square then the
@@ -1696,6 +1698,10 @@ class DomainMatrix:
         cp : list, optional
             The characteristic polynomial of the matrix `A`. If not given, it
             will be computed using :meth:`charpoly`.
+        check : bool, optional
+            If ``True`` (the default) check that the determinant is not zero
+            and raise an error if it is. If ``False`` then if the determinant
+            is zero the return value will be equal to ``(A.adjugate()*b, 0)``
 
         Returns
         =======
@@ -1733,11 +1739,6 @@ class DomainMatrix:
         if check and not cp[-1]:
             raise DMNonInvertibleMatrixError("Matrix is not invertible")
 
-        return self._solve_det_charpoly(b, cp)
-
-    def _solve_det_charpoly(self, b, cp):
-        """Inner routine for solve_det_charpoly."""
-        #
         # Compute det(A)*inv(A)*b using Horner's method without constructing
         # inv(A) explicitly. Cayley-Hamilton says that a matrix satisfies its
         # own minimal polynomial
@@ -1752,7 +1753,9 @@ class DomainMatrix:
         #
         #   det(A)*I = f[0]*A^n + f[1]*A^(n-1) + ... + f[n-1]*A.
         #
-        A = self
+        # Multiplying on the right by inv(A)*b gives
+        #
+        #   det(A)*inv(A)*b = f[0]*A^(n-1)*b + f[1]*A^(n-2)*b + ... + f[n-1]*b.
 
         if len(cp) % 2:
             # n is even
@@ -1810,13 +1813,13 @@ class DomainMatrix:
         return p_A
 
     def eval_poly_mul(self, p, B):
-        """
-        Evaluate polynomial matrix product $p(A)*B$.
+        r"""
+        Evaluate polynomial matrix product $p(A) \times B$.
 
-        Evaluate the polynomial matrix product $p(A)*B$ using Horner's method
-        without creating the matrix $p(A)$ explicitly. If $B$ is a column
-        matrix then this method will only use matrix-vector multiplies and no
-        matrix-matrix multiplies are needed.
+        Evaluate the polynomial matrix product $p(A) \times B$ using Horner's
+        method without creating the matrix $p(A)$ explicitly. If $B$ is a
+        column matrix then this method will only use matrix-vector multiplies
+        and no matrix-matrix multiplies are needed.
 
         If $B$ is square or wide or if $A$ can be represented in a simpler
         domain than $B$ then it might be faster to evaluate $p(A)$ explicitly
@@ -1856,22 +1859,22 @@ class DomainMatrix:
 
         if A.domain != B.domain:
             raise DMDomainError("Matrices must have the same domain")
-        #
-        # Given a polynomial p(x) = p[0] + p[1]*x + ... + p[n-1]*x^(n-1) and a
+
+        # Given a polynomial p(x) = p[0]*x^n + p[1]*x^(n-1) + ... + p[n-1]
         # matrix A we want to find
         #
-        #   p(A)*B = p[0]*A^n*B + p[1]*A^(n-1)*B + ... + p[n-1]*A*B
+        #   p(A)*B = p[0]*A^n*B + p[1]*A^(n-1)*B + ... + p[n-1]*B
         #
-        # Refactor to find
+        # Factoring out A term by term we get
         #
-        #   p(A)*B = A*(...A*(A*(A*(p[0]*B) - p[1]*B) - p[2]*B) - ...) - p[n-1]*B
+        #   p(A)*B = A*(...A*(A*(A*(p[0]*B) + p[1]*B) + p[2]*B) + ...) + p[n-1]*B
         #
-        # where each pair of Brackets represents one iteration of the loop
-        # Below starting from the innermost p[0]*B. If B is a column matrix
+        # where each pair of brackets represents one iteration of the loop
+        # below starting from the innermost p[0]*B. If B is a column matrix
         # then products like A*(...) are matrix-vector multiplies and products
         # like p[i]*B are scalar-vector multiplies so there are no
         # matrix-matrix multiplies.
-        #
+
         p_A_B = p[0]*B
 
         for p_i in p[1:]:
@@ -2025,19 +2028,6 @@ class DomainMatrix:
         if m != n:
             raise DMNonSquareMatrixError("not square")
         return self.rep.charpoly()
-
-    def charpoly_ds(self):
-        """
-        Characteristic polynomial as a list of :class:`DomainScalar`.
-
-        See Also
-        ========
-
-        charpoly
-        """
-        p = self.charpoly()
-        p_ds = [DomainScalar(c, self.domain) for c in p]
-        return p_ds
 
     @classmethod
     def eye(cls, shape, domain):
