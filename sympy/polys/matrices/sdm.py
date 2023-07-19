@@ -972,6 +972,15 @@ class SDM(dict):
             The equivalent function for dense :py:class:`~.DDM` matrices.
 
         """
+        if A.domain.is_Field:
+            ncols = A.shape[1]
+            one = A.domain.one
+            B, pivots, nzcols = sdm_irref(A)
+            K, nonpivots = sdm_nullspace_from_rref(B, one, ncols, pivots, nzcols)
+            K = dict(enumerate(K))
+            shape = (len(K), ncols)
+            return A.new(K, shape, A.domain), nonpivots
+
         m, n = A.shape
         K = A.domain
 
