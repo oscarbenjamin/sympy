@@ -1006,13 +1006,13 @@ class SDM(dict):
                     assert Aij == pivot_val
                     assert j == pivots[i]
                     continue
-                A_null[i][col_map[j]] = -Aij
+                A_null[col_map[j]][i] = -Aij
 
         # Add a single nonzero entry to each column
         for j, i in enumerate(nonpivots):
-            A_null[i][j] = pivot_val
+            A_null[j][i] = pivot_val
 
-        A_null = A.new(A_null, (n, nullity), K)
+        A_null = A.new(A_null, (nullity, n), K)
 
         return A_null, nonpivots
 
