@@ -31,7 +31,7 @@ from sympy.polys.fglmtools import matrix_fglm
 from sympy.polys.groebnertools import groebner as _groebner
 from sympy.polys.monomials import Monomial
 from sympy.polys.orderings import monomial_key
-from sympy.polys.polyclasses import DMP, DMF, ANP
+from sympy.polys.polyclasses import DMP, DUP_FLINT, DMF, ANP
 from sympy.polys.polyerrors import (
     OperationNotSupported, DomainError,
     CoercionFailed, UnificationFailed,
@@ -197,7 +197,7 @@ class Poly(Basic):
     @classmethod
     def new(cls, rep, *gens):
         """Construct :class:`Poly` instance from raw representation. """
-        if not isinstance(rep, DMP):
+        if not isinstance(rep, (DMP, DUP_FLINT)):
             raise PolynomialError(
                 "invalid polynomial representation: %s" % rep)
         elif rep.lev != len(gens) - 1:
