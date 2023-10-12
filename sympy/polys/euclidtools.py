@@ -4,8 +4,8 @@
 from sympy.polys.densearith import (
     dup_sub_mul,
     dup_neg, dmp_neg,
-    dmp_add,
-    dmp_sub,
+    dup_add, dmp_add,
+    dup_sub, dmp_sub,
     dup_mul, dmp_mul,
     dmp_pow,
     dup_div, dmp_div,
@@ -385,6 +385,71 @@ def dup_inner_subresultants(f, g, K):
     return R, S
 
 
+def _dup_subresultant_ducos_Se(Sd, Sd1, K):
+    """Computes S[e] = LC(S[d-1])**(d-e-1)*S[d-1] / LC(S[d])**(d-e-1)
+
+    Optimized calculation of S[e]. "dichotomous Lazard"
+
+    http://www-math.univ-poitiers.fr/~ducos/Travaux/sous-resultants.pdf
+    """
+    n = dup_degree(Sd) - dup_degree(Sd1) - 1
+
+    if n == 0:
+        return Sd1
+
+    (x, y) = (dup_LC(Sd1, K), dup_LC(Sd, K))
+
+    a = 2 ** (n.bit_length() - 1)
+    c = x
+    n = n - a
+
+    while a != 1:
+        a = a // 2
+        c = K.exquo(c**2, y)
+        if n >= a:
+            c = K.exquo(c*x, y)
+            n = n - a
+
+    Se = dup_quo_ground(dup_mul_ground(Sd1, c, K), y, K)
+
+    return Se
+
+
+def _dup_subresultant_ducos_Se1(A, Sd1, Se, sd, K):
+    """Computes S[e-1] = prem(S[d], -S[d-1]) / LC(S[d])**(d-e+1)
+
+    Optimized calculation of S[e-1].
+
+    http://www-math.univ-poitiers.fr/~ducos/Travaux/sous-resultants.pdf
+    """
+    (d, e) = (dup_degree(A), dup_degree(Sd1))
+    (cd1, se) = (dup_LC(Sd1, K), dup_LC(Se, K))
+
+    H = [i*[K.zero] + [se] for i in range(e + 1)]
+    H[e] = dup_sub(H[e], Se, K)
+
+    X = [K.zero, K.one]
+
+    for j in range(e + 1, d):
+        XHj1 = dup_mul(X, H[j-1], K)
+        term = dup_quo_ground(dup_mul_ground(Sd1, XHj1[e], K), cd1, K)
+        Hj = dup_sub(XHj1, term, K)
+        H.append(Hj)
+
+    D = []
+    lcA = dup_LC(A, K)
+    for j in range(d):
+        Dj = dup_quo_ground(dup_mul_ground(H[j], A[j], K), lcA, K)
+        D = dup_add(D, Dj, K)
+
+    XHd1 = dup_mul(X, H[d-1], K)
+    r = dup_mul_ground(dup_add(XHd1, D, K), cd1, K)
+    r = dup_sub(r, dup_mul_ground(Sd1, XHd1[e], K), K)
+    r = dup_quo_ground(r, sd * (-1)**(d-e+1), K)
+
+    return r
+
+
 def dup_subresultants_ducos(P, Q, K):
     """
     http://www-math.univ-poitiers.fr/~ducos/Travaux/sous-resultants.pdf
@@ -397,11 +462,11 @@ def dup_subresultants_ducos(P, Q, K):
         n, m = m, n
 
     if not P:
-        return [], []
+        return []
     elif not Q:
-        return [P], [K.one]
+        return [P]
 
-    S = [P, Q]
+    S = []
 
     s = dup_LC(Q, K) ** (n - m)
 
@@ -416,30 +481,55 @@ def dup_subresultants_ducos(P, Q, K):
         if not B:
             break
 
-        S.append(B)
+        S = [B] + S
+
+        if len(S) == 1:
+            Sd1, Sd = None, S[0]
+        else:
+            Sd1, Sd = S[0], S[1]
+
         delta = d - e
 
         if delta > 1:
-            lcB = dup_LC(B, K)
-            C = dup_mul_ground(B, lcB ** (delta - 1), K)
-            C = dup_quo_ground(C, s ** (delta - 1), K)
-            S.append(C)
+            if len(S) == 1:
+                lcB = dup_LC(B, K)
+                C = dup_mul_ground(B, lcB ** (delta - 1), K)
+                C = dup_quo_ground(C, s ** (delta - 1), K)
+            else:
+                lcB = dup_LC(B, K)
+                C2 = dup_mul_ground(B, lcB ** (delta - 1), K)
+                C2 = dup_quo_ground(C2, s ** (delta - 1), K)
+                C = _dup_subresultant_ducos_Se(S[1], S[0], K)
+                assert C == C2
+            S = [C] + S
         else:
             C = B
 
         if e == 0:
             break
 
-        B = dup_prem(A, dup_neg(B, K), K)
-        B = dup_quo_ground(B, s ** delta * dup_LC(A, K), K)
+        if Sd1 is None:
+            B = dup_prem(A, dup_neg(B, K), K)
+            B = dup_quo_ground(B, s ** delta * dup_LC(A, K), K)
+        else:
+            B2 = dup_prem(A, dup_neg(B, K), K)
+            B2 = dup_quo_ground(B2, s ** delta * dup_LC(A, K), K)
+            sd = dup_LC(Sd, K)
+            B = _dup_subresultant_ducos_Se1(A, Sd1, C, sd, K)
+            B = B2
+            assert B == B2
 
         A = C
         s = dup_LC(A, K)
 
+    new_S = [P, Q]
+    d = len(Q)
+    for Si in S[::-1]:
+        if len(Si) < d:
+            new_S.append(Si)
+            d = len(Si)
 
-
-    return S
-
+    return new_S
 
 def dup_subresultants(f, g, K):
     """
