@@ -385,6 +385,62 @@ def dup_inner_subresultants(f, g, K):
     return R, S
 
 
+def dup_subresultants_ducos(P, Q, K):
+    """
+    http://www-math.univ-poitiers.fr/~ducos/Travaux/sous-resultants.pdf
+    """
+    n = dup_degree(P)
+    m = dup_degree(Q)
+
+    if n < m:
+        P, Q = Q, P
+        n, m = m, n
+
+    if not P:
+        return [], []
+    elif not Q:
+        return [P], [K.one]
+
+    S = [P, Q]
+
+    s = dup_LC(Q, K) ** (n - m)
+
+    A = Q
+    B = dup_prem(P, dup_neg(Q, K), K)
+
+    while True:
+
+        d = dup_degree(A)
+        e = dup_degree(B)
+
+        if not B:
+            break
+
+        S.append(B)
+        delta = d - e
+
+        if delta > 1:
+            lcB = dup_LC(B, K)
+            C = dup_mul_ground(B, lcB ** (delta - 1), K)
+            C = dup_quo_ground(C, s ** (delta - 1), K)
+            S.append(C)
+        else:
+            C = B
+
+        if e == 0:
+            break
+
+        B = dup_prem(A, dup_neg(B, K), K)
+        B = dup_quo_ground(B, s ** delta * dup_LC(A, K), K)
+
+        A = C
+        s = dup_LC(A, K)
+
+
+
+    return S
+
+
 def dup_subresultants(f, g, K):
     """
     Computes subresultant PRS of two polynomials in `K[x]`.
