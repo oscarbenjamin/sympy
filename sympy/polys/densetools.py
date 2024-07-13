@@ -1139,6 +1139,52 @@ def dup_decompose(f, K):
     return [f] + F
 
 
+def dmp_alg_to_poly(f, u, K, R):
+    """
+    Convert polynomial from ``Q(a)[X]`` to ``Q[y][X]``.
+
+    Examples
+    ========
+
+    >>> from sympy.polys.densetools import dmp_alg_to_poly
+    >>> from sympy import QQ, sqrt, Symbol
+    >>> from sympy import sqrt
+
+    >>> x = Symbol('x')
+    >>> K = QQ.algebraic_field(sqrt(2))
+    >>> R = QQ[x]
+
+    >>> p = [K.from_sympy(sqrt(2)), K.zero, K.one]
+    >>> dmp_alg_to_poly(p, 1, K)
+    [x, 0, 1]
+
+    """
+    if K.is_GaussianField:
+        K1 = K.as_AlgebraicField()
+        f = dmp_convert(f, u, K, K1)
+        K = K1
+
+    if not K.is_Algebraic:
+        raise DomainError(
+            'computation can be done only in an algebraic domain')
+
+    if R.ngens != 1:
+        raise DomainError('multivariate polynomials are not supported')
+
+    if R.domain != K.dom:
+        raise DomainError('ground domain must be the same as the algebraic domain')
+
+    return _dmp_alg_to_poly(f, u, K, R.ring)
+
+
+def _dmp_alg_to_poly(f, u, K, R):
+    """Helper function for :func:`dmp_alg_to_poly`."""
+    if not u:
+        return [R.from_list(a.to_list()) for a in f]
+    else:
+        return [_dmp_alg_to_poly(c, u - 1, K) for c in f]
+
+
 def dmp_lift(f, u, K):
     """
     Convert algebraic coefficients to integers in ``K[X]``.
@@ -1158,33 +1204,13 @@ def dmp_lift(f, u, K):
     x**8 + 2*x**6 + 9*x**4 - 8*x**2 + 16
 
     """
-    if K.is_GaussianField:
-        K1 = K.as_AlgebraicField()
-        f = dmp_convert(f, u, K, K1)
-        K = K1
+    f = dmp_alg_to_poly(f, u, K)
+    F = dmp_inject(f, u, K, front=False)
 
-    if not K.is_Algebraic:
-        raise DomainError(
-            'computation can be done only in an algebraic domain')
+    p = K.mod.to_list()
+    P = dmp_include(f, v, K)
 
-    F, monoms, polys = dmp_to_dict(f, u), [], []
-
-    for monom, coeff in F.items():
-        if not coeff.is_ground:
-            monoms.append(monom)
-
-    perms = variations([-1, 1], len(monoms), repetition=True)
-
-    for perm in perms:
-        G = dict(F)
-
-        for sign, monom in zip(perm, monoms):
-            if sign == -1:
-                G[monom] = -G[monom]
-
-        polys.append(dmp_from_dict(G, u, K))
-
-    return dmp_convert(dmp_expand(polys, u, K), u, K, K.dom)
+    return dmp_resultant(
 
 
 def dup_sign_variations(f, K):
