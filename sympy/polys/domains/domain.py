@@ -606,6 +606,10 @@ class Domain:
     def sum(self, args):
         return sum(args, start=self.zero)
 
+    def sumprod(self, ai, bi):
+        """Sum of products of elements of ``ai`` and ``bi``. """
+        return sum([a*b for a, b in zip(ai, bi)], start=self.zero)
+
     def from_FF(K1, a, K0):
         """Convert ``ModularInteger(int)`` to ``dtype``. """
         return None

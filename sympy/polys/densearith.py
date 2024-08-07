@@ -732,6 +732,55 @@ def dmp_sub_mul(f, g, h, u, K):
     return dmp_sub(f, dmp_mul(g, h, u, K), u, K)
 
 
+def _dup_mul_long(f, g, K):
+    """Multiply dense polynomials in ``K[x]`` using long multiplication. """
+
+    nf = len(f)
+    ng = len(g)
+
+    if nf < ng:
+        f, g = g, f
+        nf, ng = ng, nf
+
+    gr = g[::-1]
+
+    h = []
+    sumprod = K.sumprod
+
+    for i in range(1, ng):
+        h.append(sumprod(f[:i], gr[-i:]))
+
+    for i in range(ng, nf+1):
+        h.append(sumprod(f[i-ng:i], gr))
+
+    for i in reversed(range(1, ng)):
+        h.append(sumprod(f[-i:], gr[:i]))
+
+    return dup_strip(h)
+
+
+def _dup_mul_karatsuba(f, g, K):
+    """Multiply dense polynomials in ``K[x]`` using the Karatsuba algorithm."""
+    # Use Karatsuba's algorithm (divide and conquer), see e.g.:
+    # Joris van der Hoeven, Relax But Don't Be Too Lazy,
+    # J. Symbolic Computation, 11 (2002), section 3.1.1.
+    n = max(len(f), len(g))
+    n2 = n // 2
+
+    fl, gl = dup_slice(f, 0, n2, K), dup_slice(g, 0, n2, K)
+
+    fh = dup_rshift(dup_slice(f, n2, n, K), n2, K)
+    gh = dup_rshift(dup_slice(g, n2, n, K), n2, K)
+
+    lo, hi = dup_mul(fl, gl, K), dup_mul(fh, gh, K)
+
+    mid = dup_mul(dup_add(fl, fh, K), dup_add(gl, gh, K), K)
+    mid = dup_sub(mid, dup_add(lo, hi, K), K)
+
+    return dup_add(dup_add(lo, dup_lshift(mid, n2, K), K),
+                  dup_lshift(hi, 2*n2, K), K)
+
+
 def dup_mul(f, g, K):
     """
     Multiply dense polynomials in ``K[x]``.
@@ -752,41 +801,12 @@ def dup_mul(f, g, K):
     if not (f and g):
         return []
 
-    df = dup_degree(f)
-    dg = dup_degree(g)
-
-    n = max(df, dg) + 1
+    n = max(len(f), len(g))
 
     if n < 100:
-        h = []
-
-        for i in range(0, df + dg + 1):
-            coeff = K.zero
-
-            for j in range(max(0, i - dg), min(df, i) + 1):
-                coeff += f[j]*g[i - j]
-
-            h.append(coeff)
-
-        return dup_strip(h)
+        return _dup_mul_long(f, g, K)
     else:
-        # Use Karatsuba's algorithm (divide and conquer), see e.g.:
-        # Joris van der Hoeven, Relax But Don't Be Too Lazy,
-        # J. Symbolic Computation, 11 (2002), section 3.1.1.
-        n2 = n//2
-
-        fl, gl = dup_slice(f, 0, n2, K), dup_slice(g, 0, n2, K)
-
-        fh = dup_rshift(dup_slice(f, n2, n, K), n2, K)
-        gh = dup_rshift(dup_slice(g, n2, n, K), n2, K)
-
-        lo, hi = dup_mul(fl, gl, K), dup_mul(fh, gh, K)
-
-        mid = dup_mul(dup_add(fl, fh, K), dup_add(gl, gh, K), K)
-        mid = dup_sub(mid, dup_add(lo, hi, K), K)
-
-        return dup_add(dup_add(lo, dup_lshift(mid, n2, K), K),
-                       dup_lshift(hi, 2*n2, K), K)
+        return _dup_mul_karatsuba(f, g, K)
 
 
 def dmp_mul(f, g, u, K):

@@ -17,6 +17,15 @@ from sympy.utilities import public
 
 import math
 
+
+try:
+    # Added in Python 3.12
+    from math import sumprod as _sumprod
+except ImportError:
+    def _sumprod(ai, bi):
+        return sum([a*b for a, b in zip(ai, bi)])
+
+
 @public
 class IntegerRing(Ring, CharacteristicZero, SimpleDomain):
     r"""The domain ``ZZ`` representing the integers `\mathbb{Z}`.
@@ -271,6 +280,10 @@ class IntegerRing(Ring, CharacteristicZero, SimpleDomain):
     def factorial(self, a):
         """Compute factorial of ``a``. """
         return factorial(a)
+
+    def sumprod(self, ai, bi):
+        """Compute sum of products. """
+        return MPZ(_sumprod(ai, bi))
 
 
 ZZ = IntegerRing()
