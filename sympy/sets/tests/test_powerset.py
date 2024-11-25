@@ -11,7 +11,7 @@ from sympy.testing.pytest import raises, XFAIL
 def test_powerset_creation():
     assert unchanged(PowerSet, FiniteSet(1, 2))
     assert unchanged(PowerSet, S.EmptySet)
-    raises(ValueError, lambda: PowerSet(123))
+    raises(ValueError, lambda: PowerSet(123)) # type: ignore
     assert unchanged(PowerSet, S.Reals)
     assert unchanged(PowerSet, S.Integers)
 
@@ -116,12 +116,14 @@ def test_powerset_method():
     # EmptySet
     A = FiniteSet()
     pset = A.powerset()
+    assert isinstance(pset, PowerSet)
     assert len(pset) == 1
     assert pset ==  FiniteSet(S.EmptySet)
 
     # FiniteSets
     A = FiniteSet(1, 2)
     pset = A.powerset()
+    assert isinstance(pset, PowerSet)
     assert len(pset) == 2**len(A)
     assert pset == FiniteSet(FiniteSet(), FiniteSet(1),
                              FiniteSet(2), A)

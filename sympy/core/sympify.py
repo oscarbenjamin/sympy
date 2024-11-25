@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from sympy.core.basic import Basic
     from sympy.core.expr import Expr
     from sympy.core.numbers import Integer, Float
+    from sympy.sets.sets import Set
+    from sympy.logic.boolalg import Boolean
 
     Tbasic = TypeVar('Tbasic', bound=Basic)
 
@@ -118,6 +120,8 @@ def sympify(a: float, *, strict: bool = False) -> Float: ...
 def sympify(a: complex, *, strict: bool = False) -> Expr: ...
 @overload
 def sympify(a: Tbasic, *, strict: bool = False) -> Tbasic: ...
+@overload
+def sympify(a: set, *, strict: bool = False) -> Set: ...
 @overload
 def sympify(a: Any, *, strict: bool = False) -> Basic: ...
 

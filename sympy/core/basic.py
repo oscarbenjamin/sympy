@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from .assumptions import StdFactKB
     from .symbol import Symbol
     from .expr import Expr
+    from sympy.logic.boolalg import Boolean
 
 
 def as_Basic(expr):
@@ -281,8 +282,6 @@ class Basic(Printable):
     is_zero: bool | None
     is_even: bool | None
 
-    kind: Kind = UndefinedKind
-
     def __new__(cls, *args):
         obj = object.__new__(cls)
         obj._assumptions = cls.default_assumptions
@@ -290,6 +289,10 @@ class Basic(Printable):
 
         obj._args = args  # all items in args must be Basic objects
         return obj
+
+    @property
+    def kind(self) -> Kind:
+        return UndefinedKind
 
     def copy(self):
         return self.func(*self.args)
@@ -492,7 +495,7 @@ class Basic(Printable):
             return self == other._sympy_()
         return NotImplemented
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Return a boolean indicating whether a == b on the basis of
         their symbolic trees.
 
@@ -955,6 +958,10 @@ class Basic(Printable):
     def subs(self: Expr, arg1: dict[Expr, Expr | int], arg2: None=None) -> Expr: ... # type: ignore
     @overload
     def subs(self: Expr, arg1: Expr, arg2: Expr | int) -> Expr: ... # type: ignore
+    @overload
+    def subs(self: Boolean, arg1: dict[Expr, Expr | int], arg2: None=None) -> Boolean: ... # type: ignore
+    @overload
+    def subs(self: Boolean, arg1: Expr, arg2: Expr | int) -> Boolean: ... # type: ignore
     @overload
     def subs(self: Basic, arg1: dict[Basic, Basic], arg2: None=None) -> Basic: ...
     @overload

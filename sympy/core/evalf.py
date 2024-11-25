@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from sympy.core.mul import Mul
     from sympy.core.power import Pow
     from sympy.core.symbol import Symbol
+    from sympy.sets.sets import Set
     from sympy.integrals.integrals import Integral
     from sympy.concrete.summations import Sum
     from sympy.concrete.products import Product
@@ -1564,6 +1565,10 @@ class EvalfMixin:
               maxn: int = 100, chop: bool = False, strict: bool  = False,
               quad: str | None = None, verbose: bool = False) -> Expr: ...
     @overload
+    def evalf(self: Set, n: int = 15, subs: dict[Basic, Basic | float] | None = None, # type: ignore
+              maxn: int = 100, chop: bool = False, strict: bool  = False,
+              quad: str | None = None, verbose: bool = False) -> Set: ...
+    @overload
     def evalf(self: Basic, n: int = 15, subs: dict[Basic, Basic | float] | None = None, # type: ignore
               maxn: int = 100, chop: bool = False, strict: bool  = False,
               quad: str | None = None, verbose: bool = False) -> Basic: ...
@@ -1700,7 +1705,16 @@ class EvalfMixin:
             r = self # type: ignore
         return r # type: ignore
 
-    def _eval_evalf(self, prec: int) -> Expr | None:
+    @overload
+    def _eval_evalf(self: Expr, prec: int) -> Expr | None: ... # type: ignore
+    @overload
+    def _eval_evalf(self: Set, prec: int) -> Set | None: ... # type: ignore
+    @overload
+    def _eval_evalf(self: Basic, prec: int) -> Basic | None: ... # type: ignore
+    @overload
+    def _eval_evalf(self: EvalfMixin, prec: int) -> Any | None: ...
+
+    def _eval_evalf(self, prec: int) -> Basic | None:
         return None
 
     def _to_mpmath(self, prec, allow_ints=True):

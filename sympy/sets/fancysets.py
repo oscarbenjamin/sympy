@@ -37,11 +37,25 @@ class Rationals(Set, metaclass=Singleton):
     [0, 1, -1, 1/2, 2, -1/2, -2, 1/3, 3, -1/3, -3, 2/3]
     """
 
-    is_iterable = True
-    _inf = S.NegativeInfinity
-    _sup = S.Infinity
-    is_empty = False
-    is_finite_set = False
+    @property
+    def is_empty(self):
+        return False
+
+    @property
+    def is_finite_set(self):
+        return False
+
+    @property
+    def is_iterable(self):
+        return True
+
+    @property
+    def _inf(self):
+        return S.NegativeInfinity
+
+    @property
+    def _sup(self):
+        return S.Infinity
 
     def _contains(self, other):
         if not isinstance(other, Expr):
@@ -129,7 +143,8 @@ class Naturals(Set, metaclass=Singleton):
     def _boundary(self):
         return self
 
-    def as_relational(self, x):
+    def as_relational(self, symbol):
+        x = symbol
         return And(Eq(floor(x), x), x >= self.inf, x < oo)
 
     def _kind(self):
@@ -226,7 +241,8 @@ class Integers(Set, metaclass=Singleton):
     def _kind(self):
         return SetKind(NumberKind)
 
-    def as_relational(self, x):
+    def as_relational(self, symbol):
+        x = symbol
         return And(Eq(floor(x), x), -oo < x, x < oo)
 
     def _eval_is_subset(self, other):
@@ -275,13 +291,15 @@ class Reals(Interval, metaclass=Singleton):
 
     @property
     def left_open(self):
-        return True
+        return S.true
 
     @property
     def right_open(self):
-        return True
+        return S.true
 
     def __eq__(self, other):
+        if not isinstance(other, Set):
+            return NotImplemented
         return other == Interval(S.NegativeInfinity, S.Infinity)
 
     def __hash__(self):
@@ -344,6 +362,9 @@ class ImageSet(Set):
 
     sympy.sets.sets.imageset
     """
+
+    args: tuple[Lambda, Set] # type: ignore
+
     def __new__(cls, flambda, *sets):
         if not isinstance(flambda, Lambda):
             raise ValueError('First argument must be a Lambda')
@@ -384,7 +405,7 @@ class ImageSet(Set):
         if len(sets) == 1:
             return sets[0]
         else:
-            return ProductSet(*sets).flatten()
+            return ProductSet(*sets).flatten() # type: ignore
 
     @property
     def base_pset(self):
@@ -411,7 +432,7 @@ class ImageSet(Set):
 
     def __iter__(self):
         already_seen = set()
-        for i in self.base_pset:
+        for i in self.base_pset: # type: ignore
             val = self.lamda(*i)
             if val in already_seen:
                 continue
@@ -987,8 +1008,9 @@ class Range(Set):
     def _boundary(self):
         return self
 
-    def as_relational(self, x):
+    def as_relational(self, symbol):
         """Rewrite a Range in terms of equalities and logic operators. """
+        x = symbol
         if self.start.is_infinite:
             assert not self.stop.is_infinite  # by instantiation
             a = self.reversed.start
@@ -1187,6 +1209,9 @@ class ComplexRegion(Set):
     """
     is_ComplexRegion = True
 
+    args: tuple[ProductSet | Union] # type: ignore
+    polar: bool
+
     def __new__(cls, sets, polar=False):
         if polar is False:
             return CartesianComplexRegion(sets)
@@ -1237,7 +1262,7 @@ class ComplexRegion(Set):
         (ProductSet(Interval(2, 3), Interval(4, 5)), ProductSet(Interval(4, 5), Interval(1, 7)))
 
         """
-        if self.sets.is_ProductSet:
+        if isinstance(self.sets, ProductSet):
             psets = ()
             psets = psets + (self.sets, )
         else:

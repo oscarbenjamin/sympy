@@ -9,6 +9,10 @@ from .sympify import sympify
 
 
 if TYPE_CHECKING:
+    from sympy.logic.boolalg import (
+        BooleanTrue as _true,
+        BooleanFalse as _false,
+    )
     from sympy.core.numbers import (
         Zero as _Zero,
         One as _One,
@@ -18,6 +22,15 @@ if TYPE_CHECKING:
         NegativeInfinity as _NegativeInfinity,
         ComplexInfinity as _ComplexInfinity,
         NaN as _NaN,
+    )
+    from sympy.sets.sets import EmptySet as _EmptySet
+    from sympy.sets.fancysets import (
+        Complexes as _Complexes,
+        Reals as _Reals,
+        Integers as _Integers,
+        Naturals as _Naturals,
+        Naturals0 as _Naturals0,
+        Rationals as _Rationals,
     )
 
 
@@ -99,6 +112,8 @@ class SingletonRegistry(Registry):
     """
     __slots__ = ()
 
+    true: _true
+    false: _false
     Zero: _Zero
     One: _One
     NegativeOne: _NegativeOne
@@ -107,6 +122,13 @@ class SingletonRegistry(Registry):
     NegativeInfinity: _NegativeInfinity
     ComplexInfinity: _ComplexInfinity
     NaN: _NaN
+    EmptySet: _EmptySet
+    Complexes: _Complexes
+    Reals: _Reals
+    Integers: _Integers
+    Naturals: _Naturals
+    Naturals0: _Naturals0
+    Rationals: _Rationals
 
     # Also allow things like S(5)
     __call__ = staticmethod(sympify)

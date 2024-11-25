@@ -924,7 +924,7 @@ def test_ComplexRegion_contains():
     assert c4.contains(3/(1 + r**2)) == Contains(
         3/(1 + r**2), c4, evaluate=False)  # is in fact True
 
-    raises(ValueError, lambda: ComplexRegion(r1*theta1, polar=2))
+    raises(ValueError, lambda: ComplexRegion(r1*theta1, polar=2)) # type: ignore
 
 
 def test_symbolic_Range():
@@ -1055,7 +1055,7 @@ def test_ComplexRegion_union():
 def test_ComplexRegion_from_real():
     c1 = ComplexRegion(Interval(0, 1) * Interval(0, 2 * S.Pi), polar=True)
 
-    raises(ValueError, lambda: c1.from_real(c1))
+    raises(ValueError, lambda: c1.from_real(c1)) # type: ignore
     assert c1.from_real(Interval(-1, 1)) == ComplexRegion(Interval(-1, 1) * FiniteSet(0), False)
 
 

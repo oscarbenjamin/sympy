@@ -66,7 +66,10 @@ class PowerSet(Set):
 
     .. [2] https://en.wikipedia.org/wiki/Axiom_of_power_set
     """
-    def __new__(cls, arg, evaluate=None):
+
+    args: tuple[Set]
+
+    def __new__(cls, arg: Set | set, evaluate=None):
         if evaluate is None:
             evaluate=global_parameters.evaluate
 

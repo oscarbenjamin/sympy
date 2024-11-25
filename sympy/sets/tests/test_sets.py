@@ -38,9 +38,11 @@ def test_imageset():
     assert imageset(x, abs(x), S.Naturals) is S.Naturals
     assert imageset(x, abs(x), S.Integers) is S.Naturals0
     # issue 16878a
-    r = symbols('r', real=True)
-    assert imageset(x, (x, x), S.Reals)._contains((1, r)) == None
-    assert imageset(x, (x, x), S.Reals)._contains((1, 2)) == False
+    r = Symbol('r', real=True)
+    img = imageset(x, (x, x), S.Reals)
+    assert isinstance(img, ImageSet)
+    assert img._contains((1, r)) is None
+    assert img._contains((1, 2)) is False
     assert (r, r) in imageset(x, (x, x), S.Reals)
     assert 1 + I in imageset(x, x + I, S.Reals)
     assert {1} not in imageset(x, (x,), S.Reals)
@@ -60,8 +62,9 @@ def test_imageset():
     assert imageset(x, y, ints) == {y}
     assert imageset((x, y), (1, z), ints, S.Reals) == {(1, z)}
     clash = Symbol('x', integer=true)
-    assert (str(imageset(lambda x: x + clash, Interval(-2, 1)).lamda.expr)
-        in ('x0 + x', 'x + x0'))
+    img = imageset(lambda x: x + clash, Interval(-2, 1))
+    assert isinstance(img, ImageSet)
+    assert (str(img.lamda.expr) in ('x0 + x', 'x + x0'))
     x1, x2 = symbols("x1, x2")
     assert imageset(lambda x, y:
         Add(x, y), Interval(1, 2), Interval(2, 3)).dummy_eq(
@@ -263,6 +266,7 @@ def test_union():
 def test_union_iter():
     # Use Range because it is ordered
     u = Union(Range(3), Range(5), Range(4), evaluate=False)
+    assert isinstance(u, Range)
 
     # Round robin
     assert list(u) == [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4]
@@ -557,9 +561,10 @@ def test_intersection():
     i = Intersection(line**2, line**3, evaluate=False)
     assert (2, 2) not in i
     assert (2, 2, 2) not in i
-    raises(TypeError, lambda: list(i))
+    raises(TypeError, lambda: list(i)) # type: ignore
 
     a = Intersection(Intersection(S.Integers, S.Naturals, evaluate=False), S.Reals, evaluate=False)
+    assert isinstance(a, Intersection)
     assert a._argset == frozenset([Intersection(S.Naturals, S.Integers, evaluate=False), S.Reals])
 
     assert Intersection(S.Complexes, FiniteSet(S.ComplexInfinity)) == S.EmptySet

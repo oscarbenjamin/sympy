@@ -1,7 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from collections import defaultdict
 
 from .sympify import sympify, SympifyError
 from sympy.utilities.iterables import iterable, uniq
+
+
+if TYPE_CHECKING:
+    from typing import Iterable, Iterator, TypeVar
+    T = TypeVar('T')
 
 
 __all__ = ['default_sort_key', 'ordered']
@@ -199,7 +208,7 @@ def _nodes(e):
         return 1
 
 
-def ordered(seq, keys=None, default=True, warn=False):
+def ordered(seq: Iterable[T], keys=None, default=True, warn=False) -> Iterator[T]:
     """Return an iterator of the seq where keys are used to break ties
     in a conservative fashion: if, after applying a key, there are no
     ties then no other keys will be computed.

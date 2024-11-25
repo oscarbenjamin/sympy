@@ -44,8 +44,9 @@ def test_Pow():
 
 
 def test_compound():
-    assert (exp(SetExpr(Interval(0, 1))*2 + 1)).set == \
-           Interval(exp(1), exp(3))
+    s = exp(SetExpr(Interval(0, 1))*2 + 1)
+    assert isinstance(s, SetExpr)
+    assert s.set == Interval(exp(1), exp(3))
 
 
 def test_Interval_Interval():
@@ -196,10 +197,14 @@ def test_SetExpr_Intersection():
     set2 = Interval(w, z)
     inter = Intersection(set1, set2)
     se = SetExpr(inter)
-    assert exp(se).set == Intersection(
+    exp_se = exp(se)
+    assert isinstance(exp_se, SetExpr)
+    assert exp_se.set == Intersection(
         ImageSet(Lambda(x, exp(x)), set1),
         ImageSet(Lambda(x, exp(x)), set2))
-    assert cos(se).set == ImageSet(Lambda(x, cos(x)), inter)
+    cos_se = cos(se)
+    assert isinstance(cos_se, SetExpr)
+    assert cos_se.set == ImageSet(Lambda(x, cos(x)), inter)
 
 
 def test_SetExpr_Interval_div():

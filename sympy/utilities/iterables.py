@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from collections import Counter, defaultdict, OrderedDict
 from itertools import (
     chain, combinations, combinations_with_replacement, cycle, islice,
@@ -15,6 +19,12 @@ from sympy.utilities.enumerative import (
 
 from sympy.utilities.misc import as_int
 from sympy.utilities.decorator import deprecated
+
+
+if TYPE_CHECKING:
+    from typing import Iterable, TypeVar, Callable
+    T = TypeVar('T')
+    K = TypeVar('K')
 
 
 def is_palindromic(s, i=0, j=None):
@@ -667,6 +677,13 @@ def sift(seq, keyfunc, binary=False):
         except (IndexError, TypeError):
             raise ValueError('keyfunc gave non-binary output')
     return T, F
+
+
+def _sift_map(seq: Iterable[T], key: Callable[[T], K]) -> defaultdict[K, list[T]]:
+    m = defaultdict(list)
+    for i in seq:
+        m[key(i)].append(i)
+    return m
 
 
 def take(iter, n):

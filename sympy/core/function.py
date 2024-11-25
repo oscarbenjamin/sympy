@@ -1974,6 +1974,8 @@ class Lambda(Expr):
     """
     is_Function = True
 
+    args: tuple[Tuple, Expr] # type: ignore
+
     def __new__(cls, signature, expr) -> Lambda:
         if iterable(signature) and not isinstance(signature, (tuple, Tuple)):
             sympy_deprecation_warning(
@@ -2018,15 +2020,15 @@ class Lambda(Expr):
     @property
     def signature(self):
         """The expected form of the arguments to be unpacked into variables"""
-        return self._args[0]
+        return self.args[0]
 
     @property
     def expr(self):
         """The return value of the function"""
-        return self._args[1]
+        return self.args[1]
 
     @property
-    def variables(self):
+    def variables(self) -> tuple[Expr, ...]:
         """The variables used in the internal representation of the function"""
         def _variables(args):
             if isinstance(args, Tuple):

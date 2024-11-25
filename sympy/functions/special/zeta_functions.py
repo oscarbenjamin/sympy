@@ -1,6 +1,7 @@
 """ Riemann zeta and related function. """
 
 from sympy.core.add import Add
+from sympy.core.expr import Expr
 from sympy.core.cache import cacheit
 from sympy.core.function import ArgumentIndexError, expand_mul, DefinedFunction
 from sympy.core.numbers import pi, I, Integer
@@ -497,6 +498,8 @@ class zeta(DefinedFunction):
     .. [2] https://en.wikipedia.org/wiki/Hurwitz_zeta_function
 
     """
+
+    args: tuple[Expr] | tuple[Expr, Expr]
 
     @classmethod
     def eval(cls, s, a=None):
