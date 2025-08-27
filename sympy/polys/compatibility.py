@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Generic, Mapping
-from sympy.polys.domains.domain import Domain, Er, Es
+from typing import TYPE_CHECKING, Generic, Mapping, Any, cast
+from sympy.polys.domains.domain import Domain, Er, Es, RingElement
+from sympy.polys.densebasic import dup, dmp, _dup, _dmp
 
 if TYPE_CHECKING:
     from sympy.core.expr import Expr
     from sympy.polys.orderings import MonomialOrder
     from sympy.polys.rings import PolyElement, PolyRing
+
+    cPoly = PolyElement[Er] | Er | int
 
 from sympy.polys.densearith import dup_add_term
 from sympy.polys.densearith import dmp_add_term
@@ -84,6 +87,7 @@ from sympy.polys.densebasic import dmp_ground_TC
 from sympy.polys.densebasic import dup_degree
 from sympy.polys.densebasic import dmp_degree
 from sympy.polys.densebasic import dmp_degree_in
+from sympy.polys.densebasic import dup_to_dict
 from sympy.polys.densebasic import dmp_to_dict
 from sympy.polys.densetools import dup_integrate
 from sympy.polys.densetools import dmp_integrate
@@ -238,6 +242,7 @@ from sympy.polys.galoistools import (
 
 from sympy.utilities import public
 
+
 @public
 class IPolys(Generic[Er]):
 
@@ -256,11 +261,15 @@ class IPolys(Generic[Er]):
         pass
 
     @abstractmethod
-    def to_ground(self) -> PolyRing[Es]:
+    def __getitem__(self, key: slice | int) -> IPolys[Er] | Domain[Er]:
         ...
 
     @abstractmethod
-    def ground_new(self, coeff) -> PolyElement[Er]:
+    def to_ground(self) -> PolyRing[Any]:
+        ...
+
+    @abstractmethod
+    def ground_new(self, coeff: Er | int) -> PolyElement[Er]:
         ...
 
     @abstractmethod
@@ -271,7 +280,7 @@ class IPolys(Generic[Er]):
     def from_dict(self, element: Mapping[tuple[int, ...], int | Er | Expr], orig_domain: Domain[Er] | None =None) -> PolyElement[Er]:
         ...
 
-    def wrap(self, element):
+    def wrap(self, element: cPoly[Er]) -> PolyElement[Er]:
         from sympy.polys.rings import PolyElement
         if isinstance(element, PolyElement):
             if element.ring == self:
@@ -281,24 +290,30 @@ class IPolys(Generic[Er]):
         else:
             return self.ground_new(element)
 
-    def to_dense(self, element):
+    def to_dense(self, element: cPoly[Er]) -> dmp[Er]:
         return self.wrap(element).to_dense()
 
-    def from_dense(self, element):
+    def from_dense(self, element: dmp[Er]) -> PolyElement[Er]:
         return self.from_dict(dmp_to_dict(element, self.ngens-1, self.domain))
 
+    def to_dup(self, element: cPoly[Er]) -> dup[Er]:
+        return self.wrap(element).to_dup()
+
+    def from_dup(self, element: dup[Er]) -> PolyElement[Er]:
+        return self.from_dict(dup_to_dict(element, self.domain))
+
     def dup_add_term(self, f, c, i):
-        return self.from_dense(dup_add_term(self.to_dense(f), c, i, self.domain))
+        return self.from_dup(dup_add_term(self.to_dup(f), c, i, self.domain))
     def dmp_add_term(self, f, c, i):
-        return self.from_dense(dmp_add_term(self.to_dense(f), self.wrap(c).drop(0).to_dense(), i, self.ngens-1, self.domain))
+        return self.from_dense(dmp_add_term(self.to_dense(f), self.wrap(c)._drop_multi(0).to_dense(), i, self.ngens-1, self.domain))
     def dup_sub_term(self, f, c, i):
-        return self.from_dense(dup_sub_term(self.to_dense(f), c, i, self.domain))
+        return self.from_dup(dup_sub_term(self.to_dup(f), c, i, self.domain))
     def dmp_sub_term(self, f, c, i):
-        return self.from_dense(dmp_sub_term(self.to_dense(f), self.wrap(c).drop(0).to_dense(), i, self.ngens-1, self.domain))
+        return self.from_dense(dmp_sub_term(self.to_dense(f), self.wrap(c)._drop_multi(0).to_dense(), i, self.ngens-1, self.domain))
     def dup_mul_term(self, f, c, i):
         return self.from_dense(dup_mul_term(self.to_dense(f), c, i, self.domain))
     def dmp_mul_term(self, f, c, i):
-        return self.from_dense(dmp_mul_term(self.to_dense(f), self.wrap(c).drop(0).to_dense(), i, self.ngens-1, self.domain))
+        return self.from_dense(dmp_mul_term(self.to_dense(f), self.wrap(c)._drop_multi(0).to_dense(), i, self.ngens-1, self.domain))
 
     def dup_add_ground(self, f, c):
         return self.from_dense(dup_add_ground(self.to_dense(f), c, self.domain))
@@ -337,7 +352,7 @@ class IPolys(Generic[Er]):
         return self.from_dense(dmp_neg(self.to_dense(f), self.ngens-1, self.domain))
 
     def dup_add(self, f, g):
-        return self.from_dense(dup_add(self.to_dense(f), self.to_dense(g), self.domain))
+        return self.from_dense(dup_add(self.to_dup(f), self.to_dup(g), self.domain))
     def dmp_add(self, f, g):
         return self.from_dense(dmp_add(self.to_dense(f), self.to_dense(g), self.ngens-1, self.domain))
 
@@ -428,12 +443,12 @@ class IPolys(Generic[Er]):
         return dmp_max_norm(self.to_dense(f), self.ngens-1, self.domain)
 
     def dup_l1_norm(self, f):
-        return dup_l1_norm(self.to_dense(f), self.domain)
+        return dup_l1_norm(self.to_dup(f), self.domain)
     def dmp_l1_norm(self, f):
         return dmp_l1_norm(self.to_dense(f), self.ngens-1, self.domain)
 
     def dup_l2_norm_squared(self, f):
-        return dup_l2_norm_squared(self.to_dense(f), self.domain)
+        return dup_l2_norm_squared(self.to_dup(f), self.domain)
     def dmp_l2_norm_squared(self, f):
         return dmp_l2_norm_squared(self.to_dense(f), self.ngens-1, self.domain)
 
@@ -443,19 +458,21 @@ class IPolys(Generic[Er]):
         return self.from_dense(dmp_expand(list(map(self.to_dense, polys)), self.ngens-1, self.domain))
 
     def dup_LC(self, f):
-        return dup_LC(self.to_dense(f), self.domain)
+        return dup_LC(self.to_dup(f), self.domain)
     def dmp_LC(self, f):
         LC = dmp_LC(self.to_dense(f), self.domain)
         if isinstance(LC, list):
-            return self[1:].from_dense(LC)
+            ring = cast('IPolys[Er]', self[1:])
+            return ring.from_dense(LC)
         else:
             return LC
     def dup_TC(self, f):
-        return dup_TC(self.to_dense(f), self.domain)
+        return dup_TC(self.to_dup(f), self.domain)
     def dmp_TC(self, f):
         TC = dmp_TC(self.to_dense(f), self.domain)
         if isinstance(TC, list):
-            return self[1:].from_dense(TC)
+            ring = cast('IPolys[Er]', self[1:])
+            return ring.from_dense(TC)
         else:
             return TC
 
@@ -465,7 +482,7 @@ class IPolys(Generic[Er]):
         return dmp_ground_TC(self.to_dense(f), self.ngens-1, self.domain)
 
     def dup_degree(self, f):
-        return dup_degree(self.to_dense(f))
+        return dup_degree(self.to_dup(f))
     def dmp_degree(self, f):
         return dmp_degree(self.to_dense(f), self.ngens-1)
     def dmp_degree_in(self, f, j):
