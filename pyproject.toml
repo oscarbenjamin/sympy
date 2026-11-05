@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -36,10 +37,50 @@ Homepage = "https://sympy.org"
 Source = "https://github.com/sympy/sympy"
 
 [project.optional-dependencies]
+gmpy = ["gmpy2"]
+flint = ["python-flint"]
+ipython = ["ipython"]
+parsing = ["antlr4-python3-runtime==4.11.*", "lark", "libclang"]
+logic = ["pycosat", "python-sat", "z3-solver"]
+plot = ["matplotlib"]
+numeric = ["numpy", "scipy", "numexpr"]
+codegen = ["cython", "llvmlite", "numba"]
+stats = ["numpy", "scipy", "pymc"]
+symengine = ["symengine"]
+mathml = ["lxml"]
 dev = ["pytest>=7.1.0", "hypothesis>=6.70.0"]
+jax = [
+    'jax; platform_python_implementation == "CPython" and ((sys_platform == "linux" and platform_machine in "x86_64 aarch64") or (sys_platform == "darwin" and platform_machine == "arm64") or (sys_platform == "win32" and platform_machine == "AMD64"))',
+]
+tensorflow = [
+    'tensorflow; platform_python_implementation == "CPython" and python_version < "3.14" and ((sys_platform == "linux" and platform_machine in "x86_64 aarch64") or (sys_platform == "darwin" and platform_machine == "arm64") or (sys_platform == "win32" and platform_machine == "AMD64"))',
+]
+torch = [
+    'torch; platform_python_implementation == "CPython" and ((sys_platform == "linux" and platform_machine in "x86_64 aarch64") or (sys_platform == "darwin" and platform_machine == "arm64") or (sys_platform == "win32" and platform_machine == "AMD64"))',
+]
+cupy = [
+    'cupy-cuda12x; platform_python_implementation == "CPython" and ((sys_platform == "linux" and platform_machine in "x86_64 aarch64") or (sys_platform == "win32" and platform_machine == "AMD64"))',
+]
 
 [project.scripts]
 isympy = "isympy:main"
+
+[dependency-groups]
+test = [
+    "pytest", "pytest-xdist", "pytest-timeout", "pytest-split",
+    "pytest-doctestplus", "pytest-run-parallel", "hypothesis",
+]
+test-optional = ["cloudpickle", "wurlitzer", "uncertainties"]
+lint = ["ruff", "mypy", "slotscheck", "sphinx-lint"]
+lint-optional = ["isort", "pyright"]
+docs = [
+    "Sphinx", "furo", "myst-parser", "linkify-it-py", "intersphinx-registry",
+    "sphinx-autobuild", "sphinx-copybutton", "sphinx-math-dollar",
+    "sphinx-reredirects", "sphinxcontrib-jquery",
+    "matplotlib", "matplotlib-inline", "scipy",
+]
+bench = ["asv", "virtualenv", "packaging"]
+dev = [{include-group = "test"}, {include-group = "lint"}]
 
 [tool.isort]
 known_first_party = "sympy"
@@ -145,7 +186,7 @@ lint.select = [
     "W292",  # missing newline at EOF
     "W293",  # blank line contains whitespace
     "B015",  # Useless comparison: a == b rather than a = b.
-    "I002",  # `import` statement not at top of file
+    "I002",  # Missing required import
     "C4",
     "E",
     "F",
